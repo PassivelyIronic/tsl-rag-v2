@@ -50,6 +50,23 @@ class RetrievalResult:
         return self.rerank_score if self.rerank_score is not None else self.rrf_score
 
 
+@dataclass
+class RetrievalStages:
+    """
+    Wyniki pośrednie wszystkich etapów jednego zapytania.
+
+    Istnieje dla ewaluacji retrievalu: bez rozbicia na etapy nie da się
+    odpowiedzieć, czy reranker poprawia kolejność, czy ją psuje, ani który
+    z dwóch retrieverów wnosi trafny dokument. `retrieve()` zwraca wyłącznie
+    listę końcową, bo aplikacji nic więcej nie jest potrzebne.
+    """
+
+    dense: list[RetrievalResult]
+    bm25: list[RetrievalResult]
+    fused: list[RetrievalResult]
+    final: list[RetrievalResult]
+
+
 # RRF constant — standard wartość z literatury
 _RRF_K = 60
 
@@ -132,6 +149,14 @@ class HybridRetriever:
         Główna metoda. Zwraca listę RetrievalResult posortowaną malejąco
         po final_score (rerank jeśli dostępny, RRF w przeciwnym razie).
         """
+        stages = await self.retrieve_stages(request)
+        return stages.final
+
+    async def retrieve_stages(self, request: RetrievalRequest) -> RetrievalStages:
+        """
+        To samo co `retrieve()`, ale zwraca wyniki wszystkich etapów.
+        Używane przez ewaluację retrievalu (`evals/run_retrieval_evals.py`).
+        """
         settings = get_settings()
         client = get_llm_client(settings)
 
@@ -177,7 +202,12 @@ class HybridRetriever:
             f"dense={len(dense_results)}, bm25={len(bm25_results)}, "
             f"fused={len(fused)}, final={len(candidates)}"
         )
-        return candidates
+        return RetrievalStages(
+            dense=dense_results,
+            bm25=bm25_results,
+            fused=fused,
+            final=candidates,
+        )
 
     # Dense search
 
