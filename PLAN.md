@@ -274,19 +274,36 @@ bo ta metryka porównuje zwrócone dokumenty z oczekiwanymi i nie zależy od `ex
       objętości. Do sprawdzenia: czy PDF kierowcy jest kompletny, czy nie jest skanem
       z ubogim tekstem, i czy `document_type=penalty_tariff` + `contains_penalty` nie powinny
       wchodzić do zapytania jako filtr, gdy pytanie dotyczy kar
-- [ ] **Model referencyjny — ZABLOKOWANY, wymaga decyzji.** Celem jest sufit jakości przy
-      obecnym retrievalu: bez niego nie wiadomo, czy niski `answer_score` znaczy „darmowy
-      model jest słaby", czy „retrieval podaje zły kontekst". Ta druga część jest już
-      częściowo odpowiedziana osobno — `recall@5` = 0.938 mówi, że właściwy dokument trafia
-      do kontekstu w 94% przypadków, więc podejrzenie pada na generację.
-      Stan providerów sprawdzony 2026-07-26:
-      - `gpt-4o` / Anthropic: **brak `OPENAI_API_KEY`**. Koszt rzędu kilku centów za przebieg,
-        decyzja właściciela repo. Runtime zostaje darmowy — płatny byłby wyłącznie pomiar
-      - Gemini: dodany jako `chat_provider="gemini"`, ale klucz ma **zerowy limit** free tier
-        (`limit: 0` w komunikacie 429). `gemini-2.5-flash` zwraca dodatkowo 404 „no longer
-        available", mimo obecności na liście modeli z API
-      - z darmowych działa tylko rodzina `gemma`, ale zwraca rozumowanie wewnątrz treści
-        odpowiedzi (`<thought>`), więc wymagałaby osobnej obsługi formatu
+- [x] **Model referencyjny — ZMIERZONY** (2026-07-26). Klucz OpenRouter obsługuje modele
+      płatne, więc osobny klucz OpenAI nie był potrzebny. `openai/gpt-4o-mini`, 56 pytań,
+      ocena keyword-match, **koszt całego przebiegu 0.029 USD**.
+      Plik: `evals/results/run_014_reference_gpt4o_mini.json`.
+
+| Metryka | `gpt-4o-mini` (referencja) | `nemotron-nano-9b:free` (v1, 15 pytań) |
+|---|---|---|
+| `answer_score` | 0.653 | 0.633 |
+| `citation_hit_rate` | 0.804 | 0.733 |
+| `citation_precision` | **0.929** | 0.800 |
+| `retrieval_recall` | 0.946 | 0.867 |
+| `false_refusal_rate` | **0.125** | 0.000 |
+| latencja średnia | **1.8 s** | 19.1 s |
+
+Kolumny nie są wprost porównywalne (inny dataset), ale rząd wielkości mówi swoje.
+
+**Wniosek dla sufitu: wąskim gardłem nie jest model.** Dziesięciokrotnie mocniejszy
+model daje `answer_score` = 0.653, czyli tyle co darmowy. Skoro `retrieval_recall`
+wynosi 0.946, a `citation_precision` 0.929, to ograniczeniem jest albo **metryka**
+(keyword-match karze poprawne parafrazy), albo **granulacja kontekstu**.
+
+**Uwaga o granicach `retrieval_recall`:** ta metryka mówi, że właściwy DOKUMENT trafił
+do kontekstu, nie że trafił właściwy PRZEPIS. Widać to w błędnych odmowach: na 6
+przypadków aż 3 miały `retrieval_recall` = 1.00, czyli model dostał właściwy akt
+i mimo to odmówił. Prawdopodobnie w pięciu chunkach nie było akurat tego artykułu.
+Do rozstrzygnięcia: recall na poziomie artykułu, nie dokumentu.
+
+- [ ] **Rozstrzygnąć, czy 0.653 to limit systemu, czy limit metryki.** Wymaga oceny
+      semantycznej. Sędzia na Gemini nie działa (niżej), ale ten sam klucz OpenRouter
+      pozwala postawić sędziego na modelu płatnym za porównywalne grosze
 - [ ] **`--use-judge` jest dziś niesprawny** — ten sam zerowy limit klucza Gemini. Dokumentacja
       opisuje ocenę semantyczną jako działającą, a nie jest. Do rozstrzygnięcia razem z modelem
       referencyjnym: albo klucz z limitem, albo sędzia na innym providerze. Dopóki to nie
@@ -327,6 +344,25 @@ więc porównanie da się zrobić bez pobierania wag.
 
 **Gate:** pełne zapytanie end-to-end przy **zatrzymanej Ollamie**, `recall@5` nie gorszy
 od baseline o więcej niż 5 pp.
+
+---
+
+### Pytanie, które otworzył model referencyjny: czy runtime musi być darmowy
+
+Przebieg referencyjny kosztował **0.029 USD za 56 pytań**, czyli około **0.0005 USD
+za zapytanie**, i był przy tym **dziesięciokrotnie szybszy** od darmowego modelu
+(1.8 s wobec 19.1 s) oraz lepszy w cytowaniach (precyzja 0.929 wobec 0.800).
+
+Przy profilu użycia „mama pyta kilka razy w tygodniu" — powiedzmy 100 zapytań
+miesięcznie — daje to **0.05 USD miesięcznie**. Pierwotne ograniczenie brzmiało
+„bez karty i za darmo"; karta jest już podpięta do OpenRoutera, a saldo wystarcza
+na kilkanaście lat takiego użycia.
+
+To nie jest rekomendacja porzucenia darmowego wariantu, tylko odnotowanie, że
+najdroższy element celu podstawowego (latencja 19 s, którą Faza 5 miała maskować
+streamingiem i cache'em) znika za grosze. Do świadomej decyzji przy Fazie 3,
+razem z łańcuchem fallbacku — w którym płatny model jest naturalnym pierwszym
+wyborem, a darmowy zapasowym.
 
 ---
 
