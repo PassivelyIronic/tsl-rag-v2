@@ -117,12 +117,22 @@ class Settings(BaseSettings):
     # Chunki taryfikatorów to duże tabele, więc przy 512 tokenach właściwy wiersz
     # bywa poza obcięciem i model ocenia fragment, w którym odpowiedzi nie ma.
     # ms-marco-MiniLM i bge-reranker-base obsługują 512; bge-reranker-v2-m3 do 8192.
-    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    reranker_max_length: int = 512
-    # Wyłączenie etapu rerankingu. Domyślnie włączony — wyłączaj wyłącznie
-    # na podstawie pomiaru z run_retrieval_evals, nie „dla uproszczenia"
-    # (CLAUDE.md §5.5).
-    reranker_enabled: bool = True
+    reranker_model: str = "BAAI/bge-reranker-v2-m3"
+    reranker_max_length: int = 2048
+    # WYŁĄCZONY DOMYŚLNIE na podstawie pomiaru, nie dla uproszczenia
+    # (tabela pięciu wariantów w PLAN.md Faza 1):
+    #   bez rerankingu            recall@5 0.938, mediana 0.1 s
+    #   ms-marco-MiniLM (512)     recall@5 0.854, mediana 1.5 s
+    #   bge-reranker-v2-m3 (2048) recall@5 0.969, mediana 43.4 s
+    # Retrieval bez rerankingu trwa 0.1 s, więc ten etap to praktycznie całość
+    # kosztu. Najlepszy wariant kupuje +0.031 recall@5 za 434-krotny wzrost
+    # latencji — nie do pogodzenia z celem, w którym odpowiedź ma przyjść
+    # w rozsądnym czasie na słabym sprzęcie.
+    #
+    # Model i okno zostawione na wartościach NAJLEPSZEGO zmierzonego wariantu,
+    # żeby włączenie tego z powrotem (np. gdy dojdzie cache odpowiedzi z Fazy 5)
+    # było jedną zmianą, a nie odtwarzaniem konfiguracji z commit message.
+    reranker_enabled: bool = False
 
     # --- Generation ---
     # Limit kontekstu liczony w ZNAKACH, nie tokenach — generator przycina

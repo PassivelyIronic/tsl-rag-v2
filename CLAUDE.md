@@ -40,7 +40,7 @@ na k3s + eval-gated CI/CD). To wpływa na decyzje architektoniczne — patrz §7
 pytanie
   → embedding zapytania        (embedding_provider)
   → dense retrieval (pgvector) ─┐
-  → BM25 (rank-bm25, in-memory)─┴→ ważony RRF → cross-encoder rerank (CPU) → top-N
+  → BM25 (rank-bm25, in-memory)─┴→ ważony RRF → [rerank: WYŁĄCZONY] → top-N
   → budowa promptu z kontekstem (limit w ZNAKACH: max_context_chars)
   → generacja                  (chat_provider)
   → odpowiedź + cytowania [doc_id | Art. X]
@@ -49,7 +49,16 @@ pytanie
 Dwie rzeczy nieoczywiste w tym przepływie:
 
 - **Wagi RRF** (`bm25_weight` / `dense_weight`) są odczytywane z Settings i muszą sumować się
-  do 1.0. Przy 0.5/0.5 ranking jest identyczny z nieważonym RRF — to jest baseline.
+  do 1.0. Zostają na 0.5/0.5 — przegląd wag po wyłączeniu rerankera pokazał, że BM25-only
+  kupuje +0.010 recall@5 kosztem 0.041 MRR i psuje największą kategorię (`numeric_fact`
+  1.000 → 0.950). Nie zmieniaj ich bez przebiegu `run_retrieval_evals`.
+- **Reranking jest wyłączony** (`RERANKER_ENABLED=false`) na podstawie pomiaru, nie
+  z upraszczania: bez niego retrieval trwa 0.1 s przy recall@5 = 0.938, a najlepszy
+  zmierzony cross-encoder daje 0.969 za 43 s. Tabela pięciu wariantów w `PLAN.md` Faza 1.
+  `RERANKER_MODEL` i `RERANKER_MAX_LENGTH` celowo wskazują najlepszy zmierzony wariant,
+  więc powrót to jedna zmiana `RERANKER_ENABLED=true`.
+- **Bez rerankera lista jest przycinana do `rerank_top_n` w retrieverze.** Wcześniej robił to
+  wyłącznie reranker — po jego wyłączeniu do kontekstu szłoby `top_k` (20) chunków zamiast 5.
 - **Tokenizer BM25 składa polskie diakrytyki** do ASCII po obu stronach (korpus i zapytanie),
   bo użytkownik często pisze bez ogonków. Nie „upraszczaj" go z powrotem do `[a-z0-9]+` —
   ten wzorzec rozrywał polskie słowa i jest pokryty testem regresyjnym.
@@ -178,7 +187,8 @@ uv run ruff check . ; uv run ruff format --check . ; uv run mypy src/tsl_rag ; u
 | **Streamlit** | React / Vite / shadcn | Jeden nietechniczny użytkownik. React to osobny serwis do budowania, hostowania i utrzymania — bez zysku funkcjonalnego przy jednym ekranie z polem tekstowym |
 | **uv** | pip / poetry | Już obecne w repo (`uv.lock`), deterministyczny lockfile, izolacja od condy na Windows |
 | **pgvector** | — | Rozszerzenie PostgreSQL, nie odejście od stacku |
-| **rank-bm25, sentence-transformers, cross-encoder** | — | Rdzeń retrievalu. Brak odpowiednika w stacku |
+| **rank-bm25, sentence-transformers** | — | Rdzeń retrievalu: BM25 + embeddingi lokalne na CPU (`multilingual-e5-base`). Brak odpowiednika w stacku |
+| **cross-encoder (reranker)** | — | Obecny w kodzie, ale **wyłączony domyślnie** — pomiar pokazał, że kosztuje całość latencji retrievalu, a przy dostępnych modelach albo szkodzi, albo kupuje +0.031 recall@5 za 43 s |
 | **OpenRouter, Cloudflare Workers AI** | OpenAI / Anthropic / Azure / GCP | Jedyne opcje realnie $0 bez karty. OpenAI i Anthropic są płatne od pierwszego tokena, co jest sprzeczne z celem podstawowym |
 | **k3s + Oracle Cloud Free Tier** | Railway / Hetzner / AWS / Azure / GCP | Railway i Hetzner kosztują. Oracle Free Tier daje 3 węzły always-on za $0, a k3s jest wprost wymagany przez projekt portfolio |
 | **OpenTelemetry, Prometheus, Grafana, Jaeger** | — | Stack nie zawiera warstwy observability, a jest wymagana przez cel #2 |

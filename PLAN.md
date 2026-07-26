@@ -208,13 +208,27 @@ Wnioski:
    516-585 tokenów, czyli powyżej limitu 512 — reranker ocenia obcięty
    fragment, w którym wiersza z karą nie ma.
 
-**Rekomendacja: `RERANKER_ENABLED=false`.** Wymaga zgody właściciela repo
-(zasada #5 w `CLAUDE.md`) i wpisu do tabeli §6.3 jako świadome odstępstwo.
+**Decyzja (2026-07-26): reranking WYŁĄCZONY**, `RERANKER_ENABLED=false`, na wniosek
+właściciela repo — czas odpowiedzi ważniejszy niż +0.031 recall@5. Odnotowane
+w tabeli §6.3 `CLAUDE.md`. `RERANKER_MODEL` i `RERANKER_MAX_LENGTH` celowo
+wskazują najlepszy zmierzony wariant, żeby powrót był jedną zmianą.
 
-- [ ] Decyzja o wyłączeniu rerankingu
-- [ ] Po wyłączeniu: przegląd wag RRF od nowa. Dotąd wagi nie miały wpływu na
-      wynik końcowy, bo reranker i tak przestawiał listę; bez niego kolejność
-      RRF staje się kolejnością finalną i wagi znów zaczynają mieć znaczenie
+- [x] Decyzja o wyłączeniu rerankingu
+- [x] Przegląd wag RRF po wyłączeniu — **bez zmian, zostaje 0.5/0.5**:
+
+| Wagi BM25/dense | recall@5 | recall@10 | recall@20 | MRR | `numeric_fact` |
+|---|---|---|---|---|---|
+| **0.5 / 0.5** | 0.938 | 0.969 | **1.000** | **0.874** | **1.000** |
+| 0.7 / 0.3 | 0.938 | 0.979 | 0.979 | 0.853 | 1.000 |
+| 0.85 / 0.15 | 0.938 | 0.979 | 0.979 | 0.838 | 1.000 |
+| 1.0 / 0.0 | **0.948** | 0.969 | 0.979 | 0.833 | 0.950 |
+
+BM25-only wygrywa recall@5 o 0.010, czyli o jedno pytanie z 48, ale traci
+0.041 MRR, psuje największą kategorię (`numeric_fact` 1.000 → 0.950) i traci
+`recall@20` = 1.000. MRR ma tu znaczenie praktyczne: pięć chunków taryfikatora
+to ~12 290 znaków przy `max_context_chars` = 12 000, więc ostatni bywa obcięty
+i kolejność decyduje o tym, co przetrwa. Dodatkowo przy wadze 0 dense stałby
+się czystym kosztem — embeddingi liczylibyśmy przy każdym zapytaniu na nic.
 - [ ] Wrócić do `v2-m3`, jeśli zmieni się budżet latencji (cache odpowiedzi
       z Fazy 5, mocniejszy sprzęt) — to jest jakość dostępna od ręki za czas
 - [ ] Rozważyć podział dużych chunków tabelarycznych. Uwaga: taryfikatory mają
@@ -315,6 +329,14 @@ z backoffem). System używany bez nadzoru autora nie może zależeć od jednego 
       uporządkowana lista `(provider, model)`, przejście dalej przy `404`/`400`/`429`,
       bez retry na `404` i `400` (są deterministyczne), circuit breaker po N porażkach,
       log strukturalny każdego przełączenia
+- [ ] **Puste odpowiedzi — zdiagnozowane, do naprawy pomiarem.** `nemotron-nano-9b-v2:free`
+      jest modelem rozumującym: w zmierzonym wywołaniu **455 z 621 tokenów wyjścia poszło
+      na reasoning**. Przy `LLM_MAX_TOKENS=1024` długi łańcuch rozumowania zjada cały budżet
+      i zwraca pustą treść — to wyjaśnia „pustą odpowiedź mimo 37 s", odnotowaną jeszcze
+      w pierwotnym opisie kategorii `cross_document`. Doraźnie: generator nie przepuszcza
+      już pustki do użytkownika, tylko zwraca komunikat po polsku i `has_answer=False`.
+      Do zrobienia: podnieść `LLM_MAX_TOKENS`, rozważyć ograniczenie reasoningu parametrem
+      OpenRoutera, i **zmierzyć** — to zmiana generacji, więc wymaga przebiegu przed/po
 - [ ] Adresować porażki generacji z baseline: brak cytowania przy poprawnej treści
       (`numeric_fact`) i cytowanie niewłaściwego aktu przy właściwym kontekście (`scope`).
       To są problemy promptu i modelu, nie retrievalu — wiemy to teraz z pomiaru

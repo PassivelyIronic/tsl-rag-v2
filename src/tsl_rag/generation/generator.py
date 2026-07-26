@@ -73,8 +73,27 @@ class RAGGenerator:
             max_tokens=settings.llm_max_tokens,
         )
 
-        answer = response.choices[0].message.content or ""
-        has_answer = _NO_ANSWER_MARKER not in answer
+        choice = response.choices[0]
+        answer = (choice.message.content or "").strip()
+
+        if not answer:
+            # Model rozumujący potrafi zużyć cały budżet max_tokens na łańcuch
+            # rozumowania i zwrócić PUSTĄ treść. Zmierzone na
+            # nvidia/nemotron-nano-9b-v2:free: 455 z 621 tokenów wyjścia poszło
+            # na reasoning. Pusta odpowiedź jest dla użytkownika gorsza niż
+            # odmowa — wygląda jak zawieszenie systemu, a nie jak brak danych.
+            usage = getattr(response, "usage", None)
+            logger.error(
+                f"Model {settings.active_llm_model} zwrócił pustą treść "
+                f"(finish_reason={choice.finish_reason}, usage={usage})"
+            )
+            answer = (
+                "Nie udało się przygotować odpowiedzi — model językowy zwrócił pustą "
+                "treść. Spróbuj zadać pytanie jeszcze raz, najlepiej krócej."
+            )
+            has_answer = False
+        else:
+            has_answer = _NO_ANSWER_MARKER not in answer
         latency_ms = int((time.monotonic() - t0) * 1000)
 
         citations = _extract_citations(answer, used_results)

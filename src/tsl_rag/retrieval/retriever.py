@@ -234,16 +234,25 @@ class HybridRetriever:
             bm25_weight=settings.bm25_weight,
         )
 
-        # Bierzemy top_k po fuzji do rerankingu
+        # Bierzemy top_k po fuzji jako pulę kandydatów
         candidates = fused[: request.top_k]
 
-        # 5. Cross-encoder rerank
+        # 5. Cross-encoder rerank — opcjonalny, domyślnie wyłączony (patrz
+        # tabela pomiarów w PLAN.md Faza 1: kosztuje całość latencji retrievalu
+        # i przy dostępnych modelach albo szkodzi, albo kupuje +0.031 recall@5
+        # za 43 sekundy).
         if candidates and self._reranker:
             candidates = self._apply_rerank(
                 query=request.query,
                 results=candidates,
                 top_n=request.rerank_top_n,
             )
+        else:
+            # Bez rerankera lista MUSI zostać przycięta tutaj. Wcześniej robił
+            # to wyłącznie reranker przez top_n, więc po jego wyłączeniu do
+            # kontekstu poszłoby top_k (20) chunków zamiast rerank_top_n (5) —
+            # cichy wzrost zużycia kontekstu i kosztu generacji.
+            candidates = candidates[: request.rerank_top_n]
 
         logger.info(
             f"retrieve('{request.query[:60]}...') → "
