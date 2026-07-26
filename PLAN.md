@@ -1,226 +1,266 @@
-# PLAN.md — TSL_RAG_reimplemented
+# PLAN.md — TSL-RAG v2
 
 ## Cel
 
-Doprowadzić fork do stanu, w którym:
+1. **Cel podstawowy:** nietechniczna osoba na słabym sprzęcie korzysta z systemu
+   w przeglądarce, za darmo, o dowolnej porze — bez lokalnego GPU i bez interwencji autora.
+2. **Cel portfolio:** repo jest bazą aplikacyjną pod przyszły projekt Kubernetes
+   (k3s + eval-gated CI/CD) i demonstruje mierzalną jakość RAG-a oraz odporność na awarie.
 
-1. **Cel podstawowy:** nietechniczna osoba na słabym sprzęcie korzysta z systemu w przeglądarce,
-   za darmo, o dowolnej porze — bez lokalnego GPU i bez Twojej interwencji.
-2. **Cel portfolio:** repo jest bazą aplikacyjną pod projekt Kubernetes (k3s + eval-gated CI/CD)
-   i demonstruje observability, odporność na awarie providerów oraz mierzalną jakość RAG-a.
-
-Te cele czasem są w konflikcie (§ Konflikt celów). Tam gdzie są — decyzja jest jawna, nie domyślna.
+Cel drugi jest **odległy i jeszcze nie rozpoczęty** — projekt Kubernetes nie istnieje.
+Repo ma być na niego gotowe, ale żadna decyzja w Fazach 0-5 nie może być podejmowana
+„pod K8s" na koszt celu podstawowego. Tam, gdzie cele kolidują, rozstrzygnięcie jest jawne
+(§ Konflikt celów).
 
 ---
 
-## Stan obecny (zweryfikowany, lipiec 2026)
+## Stan obecny (zweryfikowany 2026-07-26 na uruchomionych usługach)
 
-**Działa:**
-- Rozdzielone `embedding_provider` / `chat_provider`, integracja OpenRouter w `get_chat_client()`
-- Ingest: 444 chunki z 13 PDF-ów, `stored: 444, failed: 0`
-- Retrieval: BM25 (444 chunki) + dense + RRF + cross-encoder rerank na CPU
-- `evals/compare_models.py` — porównanie modeli na golden dataset (15 pytań), retry, `--resume`
+### Zweryfikowane pomiarem
 
-**Zmierzone — jedyny działający model generacji:**
+**Korpus:** 444 chunki, 13 dokumentów, 39 chunków tabelarycznych, zero powtórzonych tekstów.
+Źródło: `SELECT * FROM corpus_stats`. Ingest przechodzi 13/14 plików, `failed: 0`, bez tracebacków.
 
-`nvidia/nemotron-nano-9b-v2:free` (przez OpenRouter):
+**Czternasty plik nie jest brakiem.** `TARIFF_EMPLOYER_2022.pdf` jest bajtowo identyczny
+z `TARIFF_COMPANY_2022.pdf` (md5 `bc6f6cb8…` dla obu). Poprzednia wersja tego planu zalecała
+dodanie mu wpisu w rejestrze — to było błędne założenie. Wpis wstrzykuje 15 chunków
+identycznych z `tariff_company_2022`, które konkurują w retrievalu i zajmują dwa miejsca
+w kontekście zamiast jednego. Plik jest pomijany celowo (`_KNOWN_DUPLICATES`).
 
-| Metryka | Wynik |
-|---|---|
-| avg_answer_score | 0.70 |
-| avg_citation_hit_rate | 0.733 |
-| refusal_precision | 1.00 |
-| false_refusal_rate | 0.00 |
-| avg_latency | ~22.6 s |
+**Baseline generacji** — `nvidia/nemotron-nano-9b-v2:free` przez OpenRouter, embeddingi
+`nomic-embed-text` przez Ollamę, `top_k=20`, `rerank_top_n=5`, wagi RRF 0.5/0.5,
+ocena keyword-match. Trzy przebiegi, `evals/results/run_010`–`run_012`:
 
-Rozbicie po kategoriach ujawnia trzy konkretne problemy:
+| Metryka | `run_010` | `run_011` | `run_012` | Uwaga |
+|---|---|---|---|---|
+| `answer_score` | 0.633 | 0.600 | 0.633 | rozrzut 0.033 |
+| `citation_hit_rate` | 0.733 | 0.667 | 0.800 | **rozrzut 0.133** |
+| `citation_precision` | 0.800 | 0.800 | 0.733 | rozrzut 0.067 |
+| `retrieval_recall` | 0.867 | 0.867 | 0.867 | **stabilny** |
+| porażki retrievalu | 2 | 2 | 2 | **stabilne** |
+| porażki generacji | 2 | 3 | 1 | rozrzut 2 pytania |
+| `refusal_precision` | 1.000 | 1.000 | 1.000 | stabilny |
+| latencja średnia | 19.1 s | 17.5 s | 15.4 s | zależna od obciążenia providera |
 
-| Kategoria | answer | citation | Diagnoza |
-|---|---|---|---|
-| numeric_fact (9) | 0.722 | 0.889 | Najmocniejsza strona |
-| procedure (1) | 1.0 | 1.0 | OK |
-| out_of_scope (2) | 1.0 | 1.0 | Odmowy działają poprawnie |
-| **cross_document (1)** | **0.0** | **0.0** | Pusta odpowiedź mimo 37 s latencji — realna porażka syntezy 2 aktów |
-| **penalty (1)** | **0.0** | **0.0** | Zacytował `tariff_company_2022` zamiast `tariff_driver_2022` — mylenie taryf firma/kierowca |
-| **scope (1)** | **1.0** | **0.0** | Zacytował `eu_1072_2009` zamiast `aetr` — mylenie aktów o zbliżonej tematyce |
+`run_011` i `run_012` to **ten sam kod** — między nimi nie ma żadnej zmiany.
 
-**Nie działa / zablokowane:**
-- Embeddingi nadal wymagają lokalnej Ollamy → **główny blocker celu podstawowego**
-- Martwe slugi w wynikach: `deepseek/deepseek-chat-v3.1:free`, `qwen/qwen3-235b-a22b:free` (404)
-- `TARIFF_EMPLOYER_2022.pdf` pomijany przy ingest — brak wpisu w `DOCUMENT_REGISTRY`
+### Wniosek, który zmienia strategię bramkowania
+
+Metryki zależne od generacji mają przy 15 pytaniach rozrzut do **0.133 między
+przebiegami identycznego kodu** — większy niż efekt, jakiego można oczekiwać od typowej
+zmiany w retrievalu. Oznacza to, że `answer_score` i `citation_hit_rate` **nie nadają się
+dziś na bramkę CI**: przepuszczą regresję albo zablokują poprawę, w zależności od losu.
+
+Metryki retrievalu są za to w pełni stabilne: `retrieval_recall = 0.867` i te same dwie
+porażki w każdym z trzech przebiegów — bo nie ma w nich LLM-a.
+
+**Konsekwencja:** bramka promocji musi stać na metrykach retrievalu (`run_retrieval_evals.py`,
+Faza 1), które są deterministyczne i nie wymagają klucza providera. Metryki generacji zostają
+jako obserwowane, nie bramkujące, dopóki dataset nie urośnie na tyle, żeby rozrzut zmalał.
+
+**Etap porażki — to jest najważniejszy wynik tej weryfikacji.** Harness rozdziela teraz
+„retriever nie podał" od „model zignorował kontekst", więc trzy kategorie, które wcześniej
+były nieinterpretowalnym zerem, mają rozpoznanie:
+
+| Kategoria | Etap | Co się faktycznie stało |
+|---|---|---|
+| `penalty` | **retrieval** | `tariff_driver_2022` nigdy nie wszedł do kontekstu. Model zacytował `tariff_company_2022` i `eu_2016_403` — czyli to, co dostał. Nie jest to „mylenie taryfikatorów" przez model |
+| `cross_document` | **retrieval** | Żaden z dwóch oczekiwanych aktów nie wszedł w komplecie |
+| `scope` | **generacja** | `aetr` **był** w kontekście (`ret=1.00`), a model zacytował `ec_561_2006` i `eu_1072_2009` |
+| `numeric_fact` (1 z 9) | **generacja** | Poprawna treść, brak cytowania |
+
+**Diagnoza dla `penalty`** wynika wprost z asymetrii korpusu: taryfikator kierowcy ma
+**5 chunków**, taryfikator przedsiębiorcy **15**, a klasyfikacja naruszeń `eu_2016_403` — 24.
+Przy pytaniu o kary dla kierowcy retriever ma pięciokrotnie mniej materiału do dopasowania
+w dokumencie właściwym niż w konkurencyjnym. To problem korpusu i retrievalu, nie promptu.
+
+### Naprawione w tej iteracji
+
+- Repozytorium git założone, CI (ruff + format + mypy + pytest) zielone
+- Slugi modeli ujednolicone do jednego zweryfikowanego; usunięte trzy martwe
+- Martwa konfiguracja podłączona albo usunięta (wagi RRF, `top_k`, limit kontekstu, chunker)
+- `HybridRetriever` tworzony raz na proces, nie per request
+- `/health` i `/ready` rozdzielone; komunikaty błędów po polsku
+- Harness: `retrieval_recall`, `citation_precision`, `failure_stage`, snapshot konfiguracji
+- Tokenizer BM25 składa polskie diakrytyki (wcześniej `[a-z0-9]+` rozrywał słowa)
+- `ensure_utf8_output()` — ingest wywalał się na cp1250 przy wypisywaniu strzałki
+- mypy: 40 błędów → 0; `pytest -m unit` faktycznie uruchamia testy (było 0 z 11)
+
+### Nadal nie działa
+
+- **Embeddingi wymagają lokalnej Ollamy** → główny blocker celu podstawowego
+- Brak łańcucha fallbacku providerów — jedno `429` kończy zapytanie komunikatem o błędzie
 - Brak jakiejkolwiek observability
-- Brak fallbacku providerów — pojedynczy 429 kończy zapytanie błędem
+- Golden dataset ma 15 pytań; `cross_document`, `penalty`, `scope` po jednym
+- Brak testów integracyjnych (`tests/integration`, `tests/e2e` są puste)
+- Latencja 19 s bez streamingu ani informacji o postępie
 
 ---
 
 ## Konflikt celów — rozstrzygnięcia
 
-| Kwestia | Optimum dla mamy | Optimum dla portfolio | Decyzja |
+| Kwestia | Optimum dla użytkownika | Optimum dla portfolio | Decyzja |
 |---|---|---|---|
 | Vector store | numpy brute-force (444 chunki, <10 ms) | Postgres StatefulSet | **Postgres** — portfolio wygrywa, koszt złożoności akceptowalny |
 | API | in-process w Streamlicie | osobny FastAPI (HPA, probes, canary) | **Osobny FastAPI** |
-| Frontend | Streamlit | React/Vite/shadcn | **Streamlit** — React nic nie wnosi dla 1 użytkownika, a jest kolejnym serwisem do utrzymania |
-| Kolejka zadań | brak (ingest ręczny) | Celery + Redis | **Brak** — ingest odpalasz Ty, ręcznie, przy wymianie PDF-ów. Celery byłby atrapą |
-| Hosting | HF Spaces (najprostszy) | k3s Oracle Free Tier | **k3s** jeśli Faza 6 dojdzie do skutku; HF Spaces jako ścieżka awaryjna |
+| Frontend | Streamlit | React/Vite/shadcn | **Streamlit** — jeden użytkownik, jeden ekran |
+| Kolejka zadań | brak (ingest ręczny) | Celery + Redis | **Brak** — Celery byłby atrapą |
+| Hosting | HF Spaces (najprostszy) | k3s Oracle Free Tier | **HF Spaces** jako ścieżka domyślna, k3s jeśli Faza 6 powstanie |
 
-### Mapowanie na stack technologiczny
-
-Pełne rozpisanie w `CLAUDE.md` §6 wraz z regułą decyzyjną, kiedy wolno wyjść poza stack.
-Skrót:
-
-- **Ze stacku, użyte:** Python, FastAPI, PostgreSQL, Docker
-- **Ze stacku, wykluczone tutaj:** Celery (ingest ręczny — byłby atrapą), Supabase (free tier
-  usypia, podwójny cold start), React/Vite/shadcn (jeden użytkownik, jeden ekran),
-  Railway/Hetzner/AWS/Azure/GCP (płatne), OpenAI/Anthropic **jako runtime** (płatne od
-  pierwszego tokena) — ale patrz Faza 1, gdzie są przydatne jako model referencyjny
-- **Poza stackiem, dodane świadomie:** Streamlit, uv, pgvector, rank-bm25,
-  sentence-transformers, OpenRouter, Cloudflare Workers AI, k3s + Oracle Free Tier,
-  OpenTelemetry/Prometheus/Grafana/Jaeger, ArgoCD + Argo Rollouts
-
-Wykluczenia nie wynikają z tego, że te technologie są złe — wynikają z tego, że **tutaj**
-byłyby dekoracją bez funkcji, a każdy dodatkowy serwis to kolejna rzecz, która może paść,
-gdy Ciebie nie ma przy komputerze. Reguła z `CLAUDE.md` §6.5 pozwala wyjść poza stack tylko
-wtedy, gdy stack nie ma wariantu $0, dodałby atrapę albo nie zawiera danej funkcji w ogóle.
+Mapowanie na stack kanoniczny i reguła wyjścia poza niego: `CLAUDE.md` §6.
 
 ---
 
-## Faza 0 — Higiena (0.5 dnia)
+## Faza 0 — Higiena ✅ ZROBIONA (2026-07-26)
 
-Odblokowanie dalszej pracy, zero nowej funkcjonalności.
+- [x] Repozytorium git + CI (`ruff`, `ruff format`, `mypy`, `pytest -m unit`) — zielone
+- [x] Usunięte martwe wpisy z `model_comparison.json` (dwa modele zwracające 404)
+- [x] `DEFAULT_CANDIDATES` → tylko zweryfikowany slug
+- [x] `ingest_all`: jeden `asyncio.run()` na całą pętlę
+- [x] Naprawione ścieżki (`Makefile` cel `ui`, `docs/PROVIDERS.md`)
+- [x] README przepisany na stan zweryfikowany, bez liczb z pamięci
+- [x] ~~Dodać `tariff_employer_2022` do rejestru~~ → **odrzucone po weryfikacji**: plik jest
+      duplikatem, nie brakującym dokumentem
 
-- [ ] Dodać wpis `tariff_employer_2022` do `DOCUMENT_REGISTRY`, ponowić ingest tego pliku
-- [ ] Usunąć martwe wpisy (`deepseek…`, `qwen3-235b…`) z `evals/results/model_comparison.json` — to szum, nie dane
-- [ ] `DEFAULT_CANDIDATES` w `compare_models.py` → tylko zweryfikowane slugi
-- [ ] `ingest_all`: jeden `asyncio.run()` na całą pętlę zamiast per plik (usuwa hałas event loopa)
-- [ ] `README.md`: usunąć/oznaczyć twierdzenia niezweryfikowane po refaktorze providerów
-
-**Gate:** `ingest-all` przechodzi na 14/14 plików bez tracebacków.
-
----
-
-## Faza 1 — Metryki retrievalu (1 dzień)
-
-**Ta faza idzie przed jakąkolwiek zmianą modelu. Powód:** obecny harness mierzy wyłącznie
-wynik end-to-end. Gdy `citation_hit = 0` — jak przy `penalty` i `scope` — **nie da się
-odróżnić, czy retriever nie podał właściwego dokumentu, czy podał, a model go zignorował.**
-Bez tego rozróżnienia każda optymalizacja jest zgadywaniem, a A/B testy embeddingów z Fazy 2
-byłyby zanieczyszczone jakością LLM-a.
-
-- [ ] `evals/run_retrieval_evals.py` — ewaluacja **samego** retrievalu, bez wywołania LLM:
-  - `recall@k` dla `k ∈ {5, 10, 20}` względem `expected_docs`
-  - `MRR` — na której pozycji pojawia się właściwy dokument
-  - metryki osobno **przed** i **po** rerankingu (czy reranker pomaga, czy szkodzi)
-- [ ] Wzbogacić rekord wyniku w `compare_models.py` o `retrieved_docs`, żeby dało się
-      rozdzielić „retriever nie podał” od „model zignorował kontekst”
-- [ ] Rozszerzyć golden dataset: **15 pytań to za mało na bramkowanie**. Kategorie `cross_document`,
-      `penalty`, `scope` mają po **1** pytaniu — ich wynik to 0.0 albo 1.0, bez wartości pośrednich,
-      czyli statystycznie bezużyteczne. Cel: min. 5 pytań na kategorię (~40 pytań łącznie)
-- [ ] Wyjaśnić przypadek `penalty` i `scope`: retrieval czy generacja?
-- [ ] **Model referencyjny (płatny, jednorazowo).** Uruchomić golden dataset raz na `gpt-4o`
-      albo modelu Anthropic — czyli na tym, co jest w Twoim stacku kanonicznym. Cel: ustalić
-      **sufit jakości** przy obecnym retrievalu. Bez tego punktu odniesienia nie wiadomo, czy
-      `answer_score = 0.70` znaczy „darmowy model jest słaby”, czy „retrieval podaje zły kontekst
-      i lepszy model też by nie pomógł”. Koszt: rząd kilku centów za przebieg 15-40 pytań.
-      To nie jest odejście od celu $0 — runtime zostaje darmowy, płatny jest wyłącznie pomiar
-
-**Gate:** dla każdego pytania z golden dataset wiadomo, czy porażka leży w retrievalu, czy w generacji.
-Znany sufit jakości z modelu referencyjnego.
+**Gate osiągnięty:** ingest przechodzi bez tracebacków, `failed: 0`, 13 dokumentów
+(14. pominięty świadomie), CI zielone.
 
 ---
 
-## Faza 2 — Odcięcie od lokalnego GPU (1-2 dni)
+## Faza 1 — Metryki retrievalu 🔶 CZĘŚCIOWO ZROBIONA
 
-Blocker celu podstawowego. Embedding jest liczony przy **każdym zapytaniu**, nie tylko przy
-ingest — to najbardziej wrażliwy na awarię punkt pipeline'u.
+Zrobione:
+
+- [x] Rozdzielenie porażki retrievalu od generacji (`retrieval_recall`, `failure_stage`)
+- [x] `retrieved_docs` w rekordzie wyniku
+- [x] `citation_precision` obok recallu
+- [x] Snapshot konfiguracji w pliku wyniku
+- [x] Wyjaśnione `penalty` (retrieval) i `scope` (generacja)
+
+Zostaje:
+
+- [ ] **`evals/run_retrieval_evals.py`** — ewaluacja samego retrievalu, bez wywołania LLM:
+      `recall@k` dla `k ∈ {5, 10, 20}`, `MRR`, metryki osobno **przed** i **po** rerankingu.
+      **To jest teraz zadanie o najwyższym priorytecie w tej fazie** — pomiar wariancji pokazał,
+      że tylko metryki retrievalu są stabilne, więc tylko one mogą bramkować. Dodatkowo:
+      przebieg bez kosztu i bez klucza API, czyli nadaje się do CI. Odpowiada też na pytanie,
+      czy reranker pomaga, czy szkodzi
+- [ ] **Ustalić progi bramkujące na metrykach retrievalu** i zapisać w `evals/thresholds.yaml`.
+      Punkt odniesienia: `retrieval_recall = 0.867` powtarzalny w trzech przebiegach
+- [ ] **Rozszerzyć golden dataset do min. 5 pytań na kategorię** (~40 łącznie). 15 pytań
+      z jedną obserwacją w trzech kategoriach nie nadaje się na bramkę — wynik 0.0 albo 1.0
+      bez wartości pośrednich. Dołożyć też **pytania pisane bez polskich znaków** — dataset
+      nie zawiera dziś ani jednego takiego przypadku, więc nie jest w stanie zmierzyć
+      korzyści ze składania diakrytyków w tokenizerze (patrz commit 49b572c)
+- [ ] **Zdiagnozować `penalty` po stronie korpusu.** Hipoteza: taryfikator kierowcy (5 chunków)
+      przegrywa z taryfikatorem przedsiębiorcy (15) i klasyfikacją naruszeń (24) na samej
+      objętości. Do sprawdzenia: czy PDF kierowcy jest kompletny, czy nie jest skanem
+      z ubogim tekstem, i czy `document_type=penalty_tariff` + `contains_penalty` nie powinny
+      wchodzić do zapytania jako filtr, gdy pytanie dotyczy kar
+- [ ] **Model referencyjny, płatny, jednorazowo.** Golden dataset raz na `gpt-4o` albo modelu
+      Anthropic, żeby ustalić sufit jakości przy obecnym retrievalu. Bez tego nie wiadomo,
+      czy `0.633` znaczy „darmowy model jest słaby", czy „retrieval podaje zły kontekst".
+      Koszt rzędu kilku centów. Runtime zostaje darmowy — płatny jest wyłącznie pomiar
+- [ ] Ocena `--use-judge` na rozszerzonym datasecie; keyword-match karze poprawne odpowiedzi
+      sformułowane inaczej („dziewięć godzin" ≠ „9 godzin")
+
+**Gate:** dla każdego pytania wiadomo, czy porażka leży w retrievalu, czy w generacji
+(✅ osiągnięte dla obecnych 15), przy min. 5 pytaniach na kategorię (❌), ze znanym sufitem
+jakości z modelu referencyjnego (❌).
+
+---
+
+## Faza 2 — Odcięcie od lokalnego GPU
+
+Blocker celu podstawowego. Embedding liczony jest przy **każdym** zapytaniu, nie tylko
+przy ingeście — to najbardziej wrażliwy na awarię punkt pipeline'u.
 
 - [ ] Rozszerzyć `embedding_provider` o `"local"` (`sentence-transformers`, in-process, CPU)
-- [ ] A/B kandydatów **metrykami z Fazy 1**, nie „na oko”:
+- [ ] A/B kandydatów metrykami z Fazy 1, nie „na oko":
 
-| Model | Wymiary | Re-ingest? |
-|---|---|---|
-| `nomic-embed-text` (obecny, Ollama) | 768 | baseline |
-| `intfloat/multilingual-e5-base` | 768 | nie — zgodne wymiary |
-| `BAAI/bge-m3` | 1024 | **tak** + migracja kolumny `vector(n)` |
+| Model | Wymiary | Re-ingest? | Uwaga |
+|---|---|---|---|
+| `nomic-embed-text` (obecny, Ollama) | 768 | baseline | — |
+| `intfloat/multilingual-e5-base` | 768 | nie — zgodne wymiary | jedyny bez migracji schematu |
+| `BAAI/bge-m3` | 1024 | **tak** + migracja `vector(n)` | **już pobrany w Ollamie (1.16 GB)**, więc da się porównać szybciej niż zakładano |
 
-- [ ] Migracja `docker/init.sql` + skrypt migracyjny, jeśli wygra `bge-m3`
 - [ ] Zmierzyć czas embeddingu jednego zapytania na CPU (cel: <1 s)
-- [ ] Opcjonalnie: Cloudflare BGE jako `embedding_provider="cloudflare"` — zapas przy ograniczonej pamięci
+- [ ] Migracja `docker/init.sql` + skrypt migracyjny, jeśli wygra `bge-m3`
+- [ ] Opcjonalnie Cloudflare BGE jako `embedding_provider="cloudflare"` — zapas przy
+      ograniczonej pamięci targetu
 
-**Gate:** pełne zapytanie end-to-end działa przy **zatrzymanej Ollamie**, `recall@5`
-nie gorszy niż baseline o więcej niż 5 pp.
+**Gate:** pełne zapytanie end-to-end przy **zatrzymanej Ollamie**, `recall@5` nie gorszy
+od baseline o więcej niż 5 pp.
 
 ---
 
-## Faza 3 — Model generacji + odporność providerów (1-2 dni)
+## Faza 3 — Model generacji i odporność providerów
 
-Uzasadnienie fallbacku jest empiryczne, nie teoretyczne: w jednej sesji testowej wystąpiły
-**trzy różne klasy awarii** OpenRoutera (404 wycofany model, 400 zły slug, 429 przeciążenie
-upstream — 3/3 próby z backoffem). System, z którego ktoś korzysta bez Twojego nadzoru,
-nie może zależeć od jednego darmowego endpointu.
+Uzasadnienie fallbacku jest empiryczne: w jednej sesji testowej wystąpiły **trzy różne klasy
+awarii** OpenRoutera (404 wycofany model, 400 zły slug, 429 przeciążenie upstream w 3/3 próbach
+z backoffem). System używany bez nadzoru autora nie może zależeć od jednego darmowego endpointu.
 
-- [ ] Integracja Cloudflare Workers AI jako `chat_provider="cloudflare"` (10k neuronów/dobę,
-      reset 00:00 UTC, brak rotacji modeli — hosting na własnym GPU Cloudflare)
+- [ ] Cloudflare Workers AI jako `chat_provider="cloudflare"` (10k neuronów/dobę, reset 00:00 UTC,
+      brak rotacji modeli — wagi na GPU Cloudflare)
 - [ ] Benchmark przez `compare_models.py`: kandydaci Cloudflare vs `nemotron-nano-9b-v2:free`
 - [ ] **Łańcuch fallbacku** w `get_chat_client()` / `RAGGenerator`:
-  - uporządkowana lista `(provider, model)`
-  - przejście dalej przy `404` / `400` / `429` — bez retry na `404` i `400` (są deterministyczne)
-  - circuit breaker: po N porażkach provider wypada z rotacji na T minut
-  - log strukturalny każdego przełączenia (wejście dla metryk z Fazy 4)
-- [ ] Komunikat po polsku, gdy **wszystkie** providery zawiodą — nie stacktrace
-- [ ] Adresować `cross_document = 0.0`: prompt engineering albo większy model w łańcuchu
+      uporządkowana lista `(provider, model)`, przejście dalej przy `404`/`400`/`429`,
+      bez retry na `404` i `400` (są deterministyczne), circuit breaker po N porażkach,
+      log strukturalny każdego przełączenia
+- [ ] Adresować porażki generacji z baseline: brak cytowania przy poprawnej treści
+      (`numeric_fact`) i cytowanie niewłaściwego aktu przy właściwym kontekście (`scope`).
+      To są problemy promptu i modelu, nie retrievalu — wiemy to teraz z pomiaru
 
 **Gate:** przy sztucznie zepsutym pierwszym providerze zapytanie kończy się poprawną odpowiedzią
-z drugiego. `answer_score` ≥ 0.70 utrzymany, `cross_document` > 0.
+z drugiego. `answer_score` ≥ baseline, `failure_stage=generation` maleje.
 
 ---
 
-## Faza 4 — Observability (1-2 dni)
+## Faza 4 — Observability
 
-Wprost pod projekt K8s #2 (OpenTelemetry + Jaeger + Prometheus + Grafana).
-
-- [ ] OpenTelemetry, spans per etap: `embed_query` → `dense_search` → `bm25_search` →
+- [ ] OpenTelemetry, spany per etap: `embed_query` → `dense_search` → `bm25_search` →
       `rrf_fusion` → `rerank` → `generate`
-- [ ] Metryki Prometheus na `/metrics`:
-  - histogram latencji per etap (widać, że generacja to ~22 s z ~23 s całości)
-  - licznik błędów per provider per kod (`404` / `429` / timeout) — bezpośrednio z awarii Fazy 3
-  - licznik przełączeń fallbacku
-  - licznik odmów (`out_of_scope`) — wzrost sygnalizuje regresję retrievalu
-- [ ] Logi strukturalne JSON (loguru), `trace_id` spinający wpisy jednego zapytania
-- [ ] `/health` (liveness) i `/ready` (readiness: Postgres + dostępność providera) — pod probes k8s
-- [ ] Dashboard Grafany: latencja, error rate per provider, wykorzystanie darmowych limitów
+- [ ] Metryki Prometheus na `/metrics`: histogram latencji per etap, licznik błędów
+      per provider per kod, licznik przełączeń fallbacku, licznik odmów
+- [ ] Logi strukturalne JSON z `trace_id` spinającym jedno zapytanie
+- [x] `/health` i `/ready` — zrobione w Fazie 0
+- [ ] Dashboard: latencja, error rate per provider, wykorzystanie darmowych limitów
 
 **Gate:** jedno zapytanie widoczne jako kompletny trace z rozbiciem czasu na etapy.
 
 ---
 
-## Faza 5 — Deployment produkcyjny (1 dzień)
+## Faza 5 — Deployment dla użytkownika końcowego
 
-- [ ] `docker/Dockerfile` produkcyjny, multi-stage (bez `dev-dependencies`)
-- [ ] UI: komunikaty błędów po polsku, informacja o zimnym starcie, brak surowych tracebacków
-- [ ] Podstawowa autoryzacja (nawet hasło w zmiennej środowiskowej — publiczny URL bez niej to zaproszenie do wypalenia darmowych limitów)
-- [ ] Cache odpowiedzi na powtarzające się pytania (oszczędza limity, skraca latencję)
-- [ ] Deployment: k3s (jeśli Faza 6) albo HF Spaces jako ścieżka awaryjna
-- [ ] Krótka instrukcja dla użytkownika końcowego — po polsku, bez żargonu
+- [ ] `docker/Dockerfile` produkcyjny, multi-stage, bez dev-dependencies
+- [ ] Streaming odpowiedzi albo informacja o postępie — 19 s bez sygnału zwrotnego
+      wygląda jak zawieszenie
+- [ ] Cache odpowiedzi na powtarzające się pytania (oszczędza limity i skraca latencję)
+- [ ] Podstawowa autoryzacja (hasło w zmiennej środowiskowej wystarczy — publiczny URL bez niej
+      to zaproszenie do wypalenia darmowych limitów)
+- [ ] Deployment: HF Spaces jako ścieżka domyślna
+- [ ] Krótka instrukcja dla użytkownika końcowego, po polsku, bez żargonu
 
 **Gate:** osoba nietechniczna otwiera URL i uzyskuje poprawną odpowiedź z cytowaniem,
-bez Twojej obecności.
+bez obecności autora. **Po tej fazie cel podstawowy jest spełniony** — niezależnie od Fazy 6.
 
 ---
 
-## Faza 6 — Kubernetes / LLMOps (osobny projekt portfolio)
+## Faza 6 — Kubernetes / LLMOps (osobny projekt, jeszcze nie rozpoczęty)
 
-Wchodzi w zakres projektów #4 i #5 z Twojej kolejności portfolio. Repo ma być na to gotowe,
-ale realizacja jest osobna.
+Nie zaczynaj tej fazy w tym repo. Wchodzi jako osobny projekt portfolio i **dostosuje się
+do tego repo**, nie odwrotnie. Tutaj tylko lista rzeczy, które mają być na to gotowe:
 
-- [ ] Manifesty k8s: `Deployment` (API), `StatefulSet` (Postgres+pgvector), `Service`, `Ingress`
+- [ ] Manifesty: `Deployment` (API), `StatefulSet` (Postgres+pgvector), `Service`, `Ingress`
 - [ ] cert-manager + TLS, HPA na API
 - [ ] ArgoCD GitOps
-- [ ] **Eval-gated promotion:** `Job` uruchamia `run_evals` na golden dataset; `exit != 0`
-      poniżej progu blokuje promocję. To jest bezpośrednie wykorzystanie harnessu z Faz 1-3
+- [ ] **Eval-gated promotion:** `Job` uruchamia eval; `exit != 0` poniżej progu blokuje promocję.
+      Wymaga wcześniej: rozszerzonego datasetu (Faza 1) i `run_retrieval_evals.py`, który
+      działa bez klucza providera
 - [ ] Progi w wersjonowanym `evals/thresholds.yaml`; CI odrzuca commit obniżający próg
-      bez jawnego override (zgodnie z zasadą #1 w `CLAUDE.md`)
+      bez jawnego override (zasada #1 w `CLAUDE.md`)
 - [ ] Argo Rollouts — canary po metrykach z Fazy 4
-- [ ] Chaos engineering: ubicie poda Postgresa, symulacja awarii providera (Faza 3 to obsługuje)
+- [ ] Chaos engineering: ubicie poda Postgresa, symulacja awarii providera
 
 ---
 
@@ -228,26 +268,27 @@ ale realizacja jest osobna.
 
 | Ryzyko | Prawdopodobieństwo | Mitygacja |
 |---|---|---|
-| Kolejne darmowe modele znikają / są przeciążone | **Wysokie** — już wystąpiło 3× | Łańcuch fallbacku (Faza 3), min. 2 niezależne platformy |
-| Oracle Cloud Free Tier odbiera bezczynne instancje | Średnie `[WERYFIKUJ aktualną politykę]` | HF Spaces jako ścieżka awaryjna; nie wiązać celu podstawowego z Fazą 6 |
+| Kolejne darmowe modele znikają lub są przeciążone | **Wysokie** — wystąpiło 3× | Łańcuch fallbacku (Faza 3), min. 2 niezależne platformy |
 | 15 pytań to za wąska podstawa do bramkowania | **Pewne** | Rozszerzenie datasetu w Fazie 1 przed użyciem progów w CI |
-| Warunki NVIDIA wykluczają obsługę użytkowników końcowych | Znane | NVIDIA tylko do ewaluacji; runtime na Cloudflare/OpenRouter — patrz `docs/PROVIDERS.md` |
 | `bge-m3` (~2.2 GB) nie mieści się w limitach pamięci targetu | Średnie | `multilingual-e5-base` jako lżejsza alternatywa, decyzja na danych z Fazy 2 |
-| Latencja ~23 s frustruje użytkownika | Wysokie | Streaming odpowiedzi, cache, komunikat o postępie w UI |
+| Latencja 19 s frustruje użytkownika | **Wysokie** — zmierzone | Streaming, cache, komunikat o postępie (Faza 5) |
+| Korpus zawiera kolejne duplikaty lub niekompletne PDF-y | Średnie — jeden już znaleziony | `md5sum data/raw/*.pdf` przed dodaniem dokumentu; audyt kompletności w Fazie 1 |
+| Warunki NVIDIA wykluczają obsługę użytkowników końcowych | Znane | NVIDIA tylko do ewaluacji; runtime na Cloudflare/OpenRouter — `docs/PROVIDERS.md` |
+| Oracle Cloud Free Tier odbiera bezczynne instancje | Średnie `[WERYFIKUJ]` | Nie wiązać celu podstawowego z Fazą 6; HF Spaces jako ścieżka domyślna |
 
 ---
 
 ## Kolejność i zależności
 
 ```
-Faza 0 (higiena)
-   └→ Faza 1 (metryki retrievalu)      ← narzędzie pomiarowe PRZED zmianami
-        └→ Faza 2 (embedding, cel podstawowy odblokowany)
+Faza 0 (higiena) ✅
+   └→ Faza 1 (metryki retrievalu) 🔶  ← narzędzie pomiarowe PRZED zmianami
+        └→ Faza 2 (embedding — odblokowanie celu podstawowego)
              └→ Faza 3 (generacja + fallback)
                   └→ Faza 4 (observability)
-                       ├→ Faza 5 (deployment dla mamy)   ← cel podstawowy OSIĄGNIĘTY
-                       └→ Faza 6 (Kubernetes, portfolio)
+                       ├→ Faza 5 (deployment)  ← cel podstawowy OSIĄGNIĘTY
+                       └→ Faza 6 (Kubernetes — osobny projekt, później)
 ```
 
-Po Fazie 5 cel podstawowy jest spełniony niezależnie od tego, czy Faza 6 dojdzie do skutku.
-To jest celowe — sprawność narzędzia dla mamy nie może być zakładnikiem projektu portfolio.
+Najbliższy krok: domknąć Fazę 1 (`run_retrieval_evals.py` + rozszerzenie datasetu),
+bo bez niej A/B embeddingów z Fazy 2 mierzyłoby jakość LLM-a zamiast jakości retrievalu.
