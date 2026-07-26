@@ -150,13 +150,29 @@ def _build_user_message(query: str, context: str) -> str:
     """)
 
 
+# Numer jednostki z cytowania: "Art. 6(1)" → "6(1)", "Artykuł 11" → "11",
+# "ust. 3" → "3". Bierzemy wszystko po słowie kluczowym do końca fragmentu.
+# Dłuższe formy przed krótszymi — inaczej "art" złapałoby prefiks "Artykuł"
+# i przechwyciło resztę słowa ("ykuł") jako numer.
+_ARTICLE_RE = re.compile(r"(?:artykuł|artykul|art\.?)\s*([\w().\-–/]+)", re.IGNORECASE)
+_PARAGRAPH_RE = re.compile(r"(?:ust\.?|§|par\.?)\s*([\w().\-–/]+)", re.IGNORECASE)
+
+
 def _extract_citations(
     answer: str,
     used_results: list[RetrievalResult],
 ) -> list[Citation]:
     """
     Parsuje cytowania z formatu [doc_id | Art. X] w tekście odpowiedzi.
-    Mapuje z powrotem na pełne metadane chunka.
+
+    Źródłem prawdy dla numeru artykułu jest TO, CO NAPISAŁ MODEL, a nie
+    metadane pierwszego chunka danego dokumentu. Poprzednia wersja brała
+    `candidates[0].chunk.metadata.article`, więc odpowiedź cytująca
+    "[ec_561_2006 | Art. 6]" była raportowana jako Artykuł 11, jeśli tylko
+    chunk z artykułem 11 znalazł się wyżej w retrievalu. Przy zasadzie,
+    że cytowanie niewłaściwego przepisu jest porażką (CLAUDE.md §5.6),
+    zgłaszanie innego artykułu niż wskazany w tekście jest poważniejsze
+    niż brak cytowania — bo wygląda na potwierdzone metadanymi.
     """
     by_doc: dict[str, list[RetrievalResult]] = {}
     for r in used_results:
@@ -164,30 +180,46 @@ def _extract_citations(
         by_doc.setdefault(did, []).append(r)
 
     pattern = re.compile(r"\[([^\]]+)\]")
-    seen: set[str] = set()
+    seen: set[tuple[str, str | None, str | None]] = set()
     citations: list[Citation] = []
 
     for match in pattern.finditer(answer):
         raw = match.group(1)
-        if raw in seen:
-            continue
-        seen.add(raw)
-
         parts = [p.strip() for p in raw.split("|")]
         doc_id = parts[0].lower().replace(" ", "_")
 
         candidates = by_doc.get(doc_id, [])
-        chunk = candidates[0].chunk if candidates else None
-
-        if chunk is None:
+        if not candidates:
+            # Model zacytował dokument, którego nie było w kontekście —
+            # nie ma czym tego potwierdzić, więc nie zgłaszamy cytowania.
             continue
+
+        locator = " | ".join(parts[1:]) if len(parts) > 1 else ""
+        article_match = _ARTICLE_RE.search(locator)
+        paragraph_match = _PARAGRAPH_RE.search(locator)
+        article = article_match.group(1) if article_match else None
+        paragraph = paragraph_match.group(1) if paragraph_match else None
+
+        # Chunk potwierdzający: ten z pasującym artykułem, jeśli jest.
+        chunk = next(
+            (c.chunk for c in candidates if article and c.chunk.metadata.article == article),
+            candidates[0].chunk,
+        )
+
+        # Deduplikacja po (dokument, artykuł, ustęp), nie po surowym tekście —
+        # "[x | Art. 6]" i "[x | Art. 6(1)]" to dwa różne cytowania, ale dwa
+        # razy ten sam zapis nie ma się powtarzać na liście źródeł.
+        key = (doc_id, article, paragraph)
+        if key in seen:
+            continue
+        seen.add(key)
 
         citations.append(
             Citation(
                 document_id=doc_id,
                 document_title=chunk.metadata.title,
-                article=chunk.metadata.article,
-                paragraph=chunk.metadata.paragraph,
+                article=article or chunk.metadata.article,
+                paragraph=paragraph or chunk.metadata.paragraph,
                 chunk_id=chunk.chunk_id,
             )
         )
