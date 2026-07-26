@@ -256,9 +256,7 @@ def main(
         "-m",
         help="Lista modeli OpenRouter, ID rozdzielone przecinkiem",
     ),
-    output: Path = typer.Option(
-        Path("evals/results/model_comparison.json"), "--output", "-o"
-    ),
+    output: Path = typer.Option(Path("evals/results/model_comparison.json"), "--output", "-o"),
     use_judge: bool = typer.Option(
         False, "--use-judge", "-j", help="Gemini jako LLM-as-a-judge zamiast keyword-match"
     ),

@@ -59,7 +59,11 @@ class CrossEncoderReranker:
 
         model = self.load()
         pairs = [(query, text) for text in candidates]
-        scores = model.predict(pairs, show_progress_bar=False)
+        # Wyciszenie poniżej: sygnatura predict() w sentence-transformers opisuje
+        # pojedynczą parę lub listę pojedynczych wejść; lista par (query, doc)
+        # to udokumentowany i jedyny sensowny sposób użycia cross-encodera,
+        # ale nie mieści się w tej adnotacji.
+        scores = model.predict(pairs, show_progress_bar=False)  # type: ignore[arg-type]
 
         ranked = sorted(
             [

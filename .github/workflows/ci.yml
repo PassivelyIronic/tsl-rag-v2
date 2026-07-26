@@ -1,0 +1,59 @@
+name: CI
+
+# Bramka jakości kodu: lint, formatowanie, typy, testy jednostkowe.
+#
+# Czego tu świadomie NIE MA:
+# - testów integracyjnych i e2e — wymagają Postgresa z zaindeksowanym
+#   korpusem i providera embeddingów; katalogi tests/integration i tests/e2e
+#   są dziś puste (PLAN.md Faza 1)
+# - bramki na metrykach evalu — wymaga klucza providera i zaindeksowanej bazy;
+#   wchodzi razem z eval-gated promotion (PLAN.md Faza 6)
+# Dopóki tych elementów nie ma, ten workflow nie udaje, że je sprawdza.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Settings wymaga POSTGRES_DSN, a CI nie stawia bazy — wartość jest
+      # atrapą wystarczającą do walidacji konfiguracji. Żaden test w tym
+      # jobie nie łączy się z bazą.
+      POSTGRES_DSN: postgresql+asyncpg://postgres:postgres@localhost:5433/tsl_rag
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalacja uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Instalacja Pythona z .python-version
+        run: uv python install
+
+      - name: Synchronizacja zależności
+        run: uv sync --frozen
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Formatowanie (ruff format)
+        run: uv run ruff format --check .
+
+      - name: Typy (mypy)
+        run: uv run mypy src/tsl_rag
+
+      - name: Testy jednostkowe
+        run: uv run pytest -m unit

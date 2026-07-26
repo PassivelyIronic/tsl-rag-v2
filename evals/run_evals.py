@@ -170,7 +170,7 @@ async def run_evaluation(output_path: Path | None, use_judge: bool) -> None:
     async with HybridRetriever() as retriever:
         generator = RAGGenerator()
         for i, question in enumerate(GOLDEN_DATASET):
-            logger.info(f"[{i+1}/{len(GOLDEN_DATASET)}] {question.question[:70]}")
+            logger.info(f"[{i + 1}/{len(GOLDEN_DATASET)}] {question.question[:70]}")
             result = await evaluate_question(question, retriever, generator, judge)
             results_list.append(result)
             _print_result(result)
@@ -292,9 +292,9 @@ def _print_result(r: dict) -> None:
 
 
 def _print_summary(s: dict, judge_model: str) -> None:
-    print(f"\n{'='*72}")
+    print(f"\n{'=' * 72}")
     print(f"EVALUATION SUMMARY  [{judge_model}]")
-    print(f"{'='*72}")
+    print(f"{'=' * 72}")
     print(f"  Questions        : {s['total_questions']}")
     print(f"  Answer score     : {s['avg_answer_score']:.3f}")
     print(f"  Citation recall  : {s['avg_citation_hit_rate']:.3f}")

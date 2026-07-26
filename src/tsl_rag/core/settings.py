@@ -139,4 +139,9 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    # Wyciszenie poniżej: mypy nie wie, że pydantic-settings wypełnia pola
+    # wymagane (postgres_dsn) ze zmiennych środowiskowych i .env, więc widzi
+    # brakujący argument nazwany. Brak wartości w środowisku i tak skończy
+    # się ValidationError w runtime, czyli błąd nie znika, tylko jest
+    # raportowany tam, gdzie faktycznie występuje.
+    return Settings()  # type: ignore[call-arg]

@@ -39,8 +39,8 @@ eval = [
     "pandas>=2.2.0",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=5.0.0",
@@ -70,12 +70,18 @@ quote-style = "double"
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true
+# Bez mypy_path mypy rozwiązywał tsl_rag do kopii zainstalowanej w .venv
+# i zgłaszał "missing py.typed marker" dla WŁASNYCH modułów projektu —
+# 25 z 40 błędów było artefaktem tej konfiguracji, nie kodu.
+mypy_path = "src"
+explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = [
     "rank_bm25.*", "pdfplumber.*", "fitz.*",
     "unstructured.*", "sentence_transformers.*",
     "pgvector.*", "ragas.*", "yaml.*",
+    "asyncpg.*", "tqdm.*", "google.*",
 ]
 ignore_missing_imports = true
 

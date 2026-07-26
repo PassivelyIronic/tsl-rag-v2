@@ -27,8 +27,7 @@ class GeminiJudge:
         settings = get_settings()
         if not settings.gemini_api_key:
             raise ValueError(
-                "Brak GEMINI_API_KEY w .env. "
-                "Wygeneruj klucz na https://aistudio.google.com/apikey"
+                "Brak GEMINI_API_KEY w .env. Wygeneruj klucz na https://aistudio.google.com/apikey"
             )
         self._client = genai.Client(api_key=settings.gemini_api_key.get_secret_value())
 

@@ -53,7 +53,7 @@ def get_retriever(request: Request) -> HybridRetriever:
     nieużywana funkcja o tej nazwie wołała __aenter__ bez __aexit__, czyli
     wyciekałaby pool połączeń przy każdym wywołaniu.
     """
-    retriever = getattr(request.app.state, "retriever", None)
+    retriever: HybridRetriever | None = getattr(request.app.state, "retriever", None)
     if retriever is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

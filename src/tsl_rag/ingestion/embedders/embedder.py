@@ -81,7 +81,7 @@ class ChunkEmbedder:
         failed = 0
 
         logger.info(
-            f"Embedding {len(chunks)} chunks " f"in {len(batches)} batches (size={self.batch_size})"
+            f"Embedding {len(chunks)} chunks in {len(batches)} batches (size={self.batch_size})"
         )
 
         for batch in tqdm(batches, desc="Embedding", unit="batch"):
@@ -99,7 +99,7 @@ class ChunkEmbedder:
 
             if len(embeddings) != len(batch):
                 logger.error(
-                    f"Embedding count mismatch: " f"got {len(embeddings)}, expected {len(batch)}"
+                    f"Embedding count mismatch: got {len(embeddings)}, expected {len(batch)}"
                 )
                 failed += len(batch)
                 continue
@@ -141,6 +141,12 @@ def _make_batches(items: list[Chunk], size: int) -> list[list[Chunk]]:
 
 
 def _chunk_to_record(chunk: Chunk) -> tuple:
+    if chunk.embedding is None:
+        # Nie powinno się zdarzyć — _upsert_batch filtruje chunki bez
+        # embeddingu. Jawny wyjątek zamiast TypeError w środku f-stringa,
+        # gdyby ten filtr kiedyś zniknął.
+        raise ValueError(f"Chunk {chunk.chunk_id} nie ma embeddingu")
+
     m = chunk.metadata
     embedding_str = "[" + ",".join(f"{v:.8f}" for v in chunk.embedding) + "]"
     metadata_json = json.dumps(

@@ -200,7 +200,7 @@ with st.sidebar:
         st.markdown(f"{emb} Embeddingi ({ready.get('embedding_provider', '?')})")
         st.markdown(
             f'<div style="font-size:0.72rem;color:#6e7681;margin-top:0.3rem">'
-            f'model: {ready.get("chat_model", "?")}</div>',
+            f"model: {ready.get('chat_model', '?')}</div>",
             unsafe_allow_html=True,
         )
     except Exception:
@@ -242,7 +242,7 @@ for msg in st.session_state.messages:
                 f'<div class="metric-pill">⏱ <span>{meta.get("latency_ms", "?")} ms</span></div>'
                 f'<div class="metric-pill">📄 <span>{meta.get("chunks_in_context", "?")} chunks</span></div>'
                 f'<div class="metric-pill">🤖 <span>{meta.get("model", "?")}</span></div>'
-                f'</div>',
+                f"</div>",
                 unsafe_allow_html=True,
             )
 
@@ -261,8 +261,8 @@ for msg in st.session_state.messages:
                     f'<span class="citation-doc">{cit.get("document_id", "")}</span>'
                     f'<span class="citation-article">Art. {article}</span>'
                     f'<span style="color:#6e7681;font-size:0.75rem;margin-left:auto">'
-                    f'{cit.get("document_title","")}</span>'
-                    f'</div>',
+                    f"{cit.get('document_title', '')}</span>"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -272,7 +272,7 @@ for msg in st.session_state.messages:
                 for i, chunk in enumerate(msg["chunks"]):
                     cols = st.columns([3, 1, 1, 1, 1])
                     cols[0].caption(
-                        f"**{chunk['chunk']['metadata']['document_id']}** · {chunk['chunk']['metadata'].get('article','')}"
+                        f"**{chunk['chunk']['metadata']['document_id']}** · {chunk['chunk']['metadata'].get('article', '')}"
                     )
                     cols[1].caption(f"dense: {chunk['dense_score']:.3f}")
                     cols[2].caption(f"bm25: {chunk['bm25_score']:.2f}")
@@ -327,7 +327,7 @@ if prompt := st.chat_input("Zadaj pytanie o przepisach transportowych UE…"):
                     f'<div class="metric-pill">⏱ <span>{meta["latency_ms"]} ms</span></div>'
                     f'<div class="metric-pill">📄 <span>{meta["chunks_in_context"]} chunks</span></div>'
                     f'<div class="metric-pill">🤖 <span>{meta["model"]}</span></div>'
-                    f'</div>',
+                    f"</div>",
                     unsafe_allow_html=True,
                 )
 
@@ -342,11 +342,11 @@ if prompt := st.chat_input("Zadaj pytanie o przepisach transportowych UE…"):
                         article = cit.get("article") or "—"
                         st.markdown(
                             f'<div class="citation-card">'
-                            f'<span class="citation-doc">{cit.get("document_id","")}</span>'
+                            f'<span class="citation-doc">{cit.get("document_id", "")}</span>'
                             f'<span class="citation-article">Art. {article}</span>'
                             f'<span style="color:#6e7681;font-size:0.75rem;margin-left:auto">'
-                            f'{cit.get("document_title","")}</span>'
-                            f'</div>',
+                            f"{cit.get('document_title', '')}</span>"
+                            f"</div>",
                             unsafe_allow_html=True,
                         )
 
@@ -357,7 +357,7 @@ if prompt := st.chat_input("Zadaj pytanie o przepisach transportowych UE…"):
                             cols = st.columns([3, 1, 1, 1, 1])
                             cols[0].caption(
                                 f"**{chunk['chunk']['metadata']['document_id']}** · "
-                                f"{chunk['chunk']['metadata'].get('article','')}"
+                                f"{chunk['chunk']['metadata'].get('article', '')}"
                             )
                             cols[1].caption(f"dense {chunk['dense_score']:.3f}")
                             cols[2].caption(f"bm25 {chunk['bm25_score']:.2f}")

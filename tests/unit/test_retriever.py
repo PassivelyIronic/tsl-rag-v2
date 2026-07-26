@@ -1,5 +1,9 @@
+import pytest
+
 from tsl_rag.core.models import Chunk, DocumentMetadata, DocumentType, LegalHierarchyLevel
 from tsl_rag.retrieval.retriever import _reciprocal_rank_fusion, _tokenize
+
+pytestmark = pytest.mark.unit
 
 
 def _fake_result(cid: str, dense: float = 0.0, bm25: float = 0.0):

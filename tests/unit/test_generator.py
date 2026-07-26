@@ -1,3 +1,5 @@
+import pytest
+
 from tsl_rag.core.models import (
     Chunk,
     DocumentMetadata,
@@ -6,6 +8,12 @@ from tsl_rag.core.models import (
 )
 from tsl_rag.generation.generator import _build_context, _extract_citations
 from tsl_rag.retrieval.retriever import RetrievalResult
+
+pytestmark = pytest.mark.unit
+
+# Limit kontekstu jest teraz parametrem _build_context (pochodzi z Settings),
+# a nie stałą modułową — testy podają go wprost, żeby nie zależeć od .env.
+_CTX_LIMIT = 12_000
 
 
 def _fake_result(cid: str, doc_id: str, text: str, article: str = "6") -> RetrievalResult:
@@ -27,7 +35,7 @@ def _fake_result(cid: str, doc_id: str, text: str, article: str = "6") -> Retrie
 
 def test_build_context_includes_header():
     results = [_fake_result("d::0001", "ec_561_2006", "Daily driving limit is 9h.")]
-    context, used = _build_context(results)
+    context, used = _build_context(results, _CTX_LIMIT)
     assert "ec_561_2006" in context
     assert "Art." in context
     assert len(used) == 1
@@ -37,7 +45,7 @@ def test_build_context_respects_limit():
     # Jeden chunk z ogromnym tekstem przekraczającym limit
     big_text = "X" * 15_000
     results = [_fake_result("d::0001", "ec_561_2006", big_text)]
-    context, used = _build_context(results)
+    context, used = _build_context(results, _CTX_LIMIT)
     assert len(used) == 0  # za duży → nie wchodzi do kontekstu
 
 

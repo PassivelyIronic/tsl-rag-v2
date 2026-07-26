@@ -1,6 +1,10 @@
+import pytest
+
 from tsl_rag.core.models import DocumentType, LegalHierarchyLevel
-from tsl_rag.ingestion.chunkers.legal_chunker import LegalChunker  # ← poprawiony import
+from tsl_rag.ingestion.chunkers.legal_chunker import LegalChunker
 from tsl_rag.ingestion.parsers.legal_pdf_parser import ParsedElement
+
+pytestmark = pytest.mark.unit
 
 
 def _make_elem(text: str, article: str = "Article 4") -> ParsedElement:
