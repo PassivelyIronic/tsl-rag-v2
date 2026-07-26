@@ -194,10 +194,17 @@ z jednozdaniowym uzasadnieniem, żeby decyzja została udokumentowana, a nie odk
 
 ## 7. Ograniczenia z portfolio Kubernetes
 
-Repo ma **w przyszłości** zostać wdrożone na k3s w ramach osobnego projektu portfolio.
-Ten projekt **jeszcze nie istnieje i nie jest rozpoczęty** — dostosuje się do tego repo,
-nie odwrotnie. Nie dodawaj tutaj manifestów, Helm chartów ani konfiguracji ArgoCD, dopóki
-Faza 5 nie jest skończona. Poniższe ograniczenia to jedyne, które już teraz wpływają na kod:
+Kubernetes jest **osobnym projektem, odległym w czasie i jeszcze nierozpoczętym**. TSL-RAG
+będzie w nim tylko **jednym z tenantów** — nie jest to projekt „TSL-RAG na k8s", a klaster,
+w którym ten system jest jedną z uruchomionych aplikacji.
+
+Praktyczny wniosek: **nie dodawaj tutaj manifestów, Helm chartów ani konfiguracji ArgoCD.**
+Nie projektuj też niczego „pod multi-tenancy" — namespace'y, quoty i polityki sieciowe są
+sprawą klastra, nie aplikacji. Jedyne, co ma wynikać z tego kierunku, to żeby aplikacja była
+**dobrze zachowującym się tenantem**: konfiguracja ze zmiennych środowiskowych, stan wyłącznie
+w bazie, uczciwe probe'y, logi na stdout. To i tak jest dobra praktyka niezależnie od k8s.
+
+Poniższe ograniczenia to jedyne, które już teraz wpływają na kod:
 
 - **PostgreSQL + pgvector zostaje** (mimo że przy 444 chunkach brute-force numpy byłby szybszy).
   Powód: StatefulSet z bazą jest wymaganym elementem projektu K8s. Prostota przegrywa tu

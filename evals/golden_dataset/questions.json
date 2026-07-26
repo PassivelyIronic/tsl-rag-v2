@@ -1,0 +1,126 @@
+{
+  "schema_version": 2,
+  "_format": "Opis formatu i instrukcja generowania: docs/GOLDEN_DATASET.md",
+  "questions": [
+    {
+      "id": "ec561-czas-jazdy-dzienny",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Jaki jest maksymalny dzienny czas prowadzenia pojazdu?",
+      "expected_answer": "9 godzin, 10 godzin, dwa razy w tygodniu",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "ec561-czas-jazdy-tygodniowy",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Jaki jest maksymalny tygodniowy czas prowadzenia pojazdu?",
+      "expected_answer": "56 godzin",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "ec561-czas-jazdy-dwa-tygodnie",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Ile godzin może wynieść łączny czas prowadzenia pojazdu w ciągu dwóch kolejnych tygodni?",
+      "expected_answer": "90 godzin",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "ec561-przerwa-po-4h30",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Jak długa przerwa przysługuje kierowcy po 4,5 godzinach jazdy?",
+      "expected_answer": "45 minut",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "ec561-odpoczynek-dzienny",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Jaki jest minimalny dzienny czas odpoczynku kierowcy?",
+      "expected_answer": "11 godzin",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "ec561-odpoczynek-dzielony",
+      "category": "procedure",
+      "variant": "standard",
+      "question": "Czy dzienny okres odpoczynku może być podzielony i na jakie części?",
+      "expected_answer": "3 godziny, 9 godzin",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "ec561-odpoczynek-tygodniowy-regularny",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Jaki jest regularny tygodniowy okres odpoczynku?",
+      "expected_answer": "45 godzin",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "ec561-odpoczynek-skrocony-ile-tygodni",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Ile kolejnych tygodni kierowca może korzystać ze skróconego odpoczynku tygodniowego?",
+      "expected_answer": "dwa",
+      "expected_docs": ["ec_561_2006"]
+    },
+    {
+      "id": "dir200215-czas-pracy-sredni",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Jaki jest maksymalny średni tygodniowy czas pracy zgodnie z dyrektywą 2002/15?",
+      "expected_answer": "48 godzin",
+      "expected_docs": ["directive_2002_15"]
+    },
+    {
+      "id": "dir200215-czas-pracy-przedluzony",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "question": "Do ilu godzin może być przedłużony tygodniowy czas pracy na mocy dyrektywy 2002/15?",
+      "expected_answer": "60 godzin",
+      "expected_docs": ["directive_2002_15"]
+    },
+    {
+      "id": "cross-561-vs-200215-tygodniowe-limity",
+      "category": "cross_document",
+      "variant": "standard",
+      "question": "Jak rozporządzenie EC 561/2006 i dyrektywa 2002/15 regulują tygodniowy czas prowadzenia pojazdu i pracy?",
+      "expected_answer": "56 godzin prowadzenia, 48 godzin średni czas pracy",
+      "expected_docs": ["ec_561_2006", "directive_2002_15"]
+    },
+    {
+      "id": "aetr-zakres-panstwa-trzecie",
+      "category": "scope",
+      "variant": "standard",
+      "question": "Czy umowa AETR ma zastosowanie do kierowców poza Unią Europejską?",
+      "expected_answer": "państwa trzecie",
+      "expected_docs": ["aetr"]
+    },
+    {
+      "id": "penalty-kierowca-czas-jazdy",
+      "category": "penalty",
+      "variant": "standard",
+      "question": "Jakie kary grożą za przekroczenie dziennego czasu prowadzenia pojazdu?",
+      "expected_answer": "grzywna",
+      "expected_docs": ["tariff_driver_2022"]
+    },
+    {
+      "id": "oos-ograniczenie-predkosci",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "question": "Jakie jest ograniczenie prędkości na polskich autostradach?",
+      "expected_answer": "",
+      "expected_docs": []
+    },
+    {
+      "id": "oos-minimalne-wynagrodzenie-de",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "question": "Jakie jest minimalne wynagrodzenie kierowcy ciężarówki w Niemczech?",
+      "expected_answer": "",
+      "expected_docs": []
+    }
+  ]
+}

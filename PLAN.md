@@ -147,11 +147,17 @@ Zostaje:
       czy reranker pomaga, czy szkodzi
 - [ ] **Ustalić progi bramkujące na metrykach retrievalu** i zapisać w `evals/thresholds.yaml`.
       Punkt odniesienia: `retrieval_recall = 0.867` powtarzalny w trzech przebiegach
-- [ ] **Rozszerzyć golden dataset do min. 5 pytań na kategorię** (~40 łącznie). 15 pytań
-      z jedną obserwacją w trzech kategoriach nie nadaje się na bramkę — wynik 0.0 albo 1.0
-      bez wartości pośrednich. Dołożyć też **pytania pisane bez polskich znaków** — dataset
-      nie zawiera dziś ani jednego takiego przypadku, więc nie jest w stanie zmierzyć
-      korzyści ze składania diakrytyków w tokenizerze (patrz commit 49b572c)
+- [x] **Format datasetu gotowy na rozszerzenie** — `questions.json` + walidacja przy wczytaniu
+      i w testach, specyfikacja i prompt do generowania w `docs/GOLDEN_DATASET.md`
+- [ ] **Rozszerzyć golden dataset do 42 pytań, min. 5 na kategorię.** Przydział per plik
+      i prompt do NotebookLM: `docs/GOLDEN_DATASET.md` §6-7. Materiał generuje właściciel repo
+      nad korpusem PDF; scalenie i walidacja po stronie repo. **Wymaga ręcznego przejrzenia
+      `source_note`** — błąd w golden datasecie jest gorszy niż brak pytania, bo od tego momentu
+      mierzymy system względem nieprawdy. Test `test_each_category_has_at_least_five_questions`
+      jest oznaczony `xfail` i zdejmuje się go, gdy próg zostanie osiągnięty
+- [ ] Dołożyć warianty `bez_ogonkow` (6) i `potoczne` (4). Dataset v1 miał wszystkie pytania
+      z diakrytykami i w terminologii aktu, więc nie mierzył ani składania diakrytyków
+      w tokenizerze (commit 49b572c), ani zapytań bez słów z przepisu
 - [ ] **Zdiagnozować `penalty` po stronie korpusu.** Hipoteza: taryfikator kierowcy (5 chunków)
       przegrywa z taryfikatorem przedsiębiorcy (15) i klasyfikacją naruszeń (24) na samej
       objętości. Do sprawdzenia: czy PDF kierowcy jest kompletny, czy nie jest skanem
@@ -246,10 +252,18 @@ bez obecności autora. **Po tej fazie cel podstawowy jest spełniony** — nieza
 
 ---
 
-## Faza 6 — Kubernetes / LLMOps (osobny projekt, jeszcze nie rozpoczęty)
+## Faza 6 — Kubernetes / LLMOps (osobny projekt, odległy, nierozpoczęty)
 
-Nie zaczynaj tej fazy w tym repo. Wchodzi jako osobny projekt portfolio i **dostosuje się
-do tego repo**, nie odwrotnie. Tutaj tylko lista rzeczy, które mają być na to gotowe:
+TSL-RAG będzie w tym klastrze **jednym z tenantów**, a nie jego tematem. To nie jest projekt
+„TSL-RAG na k8s" — to klaster, w którym ten system jest jedną z uruchomionych aplikacji.
+
+Nie zaczynaj tego w tym repo i nie projektuj niczego „pod multi-tenancy": namespace'y, quoty
+i polityki sieciowe są sprawą klastra. Jedyne, co ma z tego wynikać dla aplikacji, to żeby
+była **dobrze zachowującym się tenantem** — konfiguracja ze zmiennych środowiskowych, stan
+wyłącznie w bazie, uczciwe probe'y, logi na stdout. To i tak jest dobra praktyka niezależnie
+od k8s, więc nic tu nie robimy „na zapas".
+
+Lista poniżej należy do tamtego projektu, nie do tego:
 
 - [ ] Manifesty: `Deployment` (API), `StatefulSet` (Postgres+pgvector), `Service`, `Ingress`
 - [ ] cert-manager + TLS, HPA na API

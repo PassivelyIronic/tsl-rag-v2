@@ -90,11 +90,19 @@ DOCUMENT_REGISTRY: dict[str, dict] = {
 # dokumenty — co uderza wprost w kategorię "penalty" z golden dataset, gdzie
 # model już teraz cytuje tariff_company_2022 zamiast tariff_driver_2022.
 #
-# Zanim to wróci do rejestru, trzeba ustalić, czy taryfikator dla pracodawcy
-# istnieje jako odrębny dokument i pobrać go osobno. Do tego czasu pominięcie
-# jest zachowaniem poprawnym, a nie luką.
+# Potwierdzone też po stronie źródła: oba pliki to **Załącznik nr 3** do ustawy
+# o transporcie drogowym (kary pieniężne dla przewoźnika, czyli pracodawcy).
+# "COMPANY" i "EMPLOYER" to dwie nazwy nadane temu samemu załącznikowi, a nie
+# dwa różne taryfikatory. Nie ma więc czego dodatkowo szukać ani pobierać.
+#
+# Dla porządku, odwzorowanie taryfikatorów na załączniki ustawy:
+#   Załącznik nr 1 → tariff_driver_2022   (grzywny dla kierowcy)
+#   Załącznik nr 3 → tariff_company_2022  (kary dla przewoźnika/pracodawcy)
+#   Załącznik nr 4 → tariff_manager_2022  (kary dla zarządzającego transportem)
 _KNOWN_DUPLICATES = {
-    "TARIFF_EMPLOYER_2022": "identyczny bajtowo z TARIFF_COMPANY_2022.pdf",
+    "TARIFF_EMPLOYER_2022": (
+        "identyczny bajtowo z TARIFF_COMPANY_2022.pdf — oba to Załącznik nr 3"
+    ),
 }
 
 

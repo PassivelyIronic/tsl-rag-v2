@@ -114,8 +114,10 @@ async def _evaluate_question_safe(
             break
 
     return {
+        "id": question.id,
         "question": question.question,
         "category": question.category,
+        "variant": question.variant,
         "expected_docs": question.expected_docs,
         "answer_score": 0.0,
         "citation_hit_rate": 0.0,

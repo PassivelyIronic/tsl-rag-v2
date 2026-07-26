@@ -89,8 +89,8 @@ async def evaluate_question(
         logger.debug(f"  Judge: {answer_score:.1f} — {judge_reasoning}")
 
     else:
-        # Fallback: keyword match
-        key_facts = [f.strip() for f in question.expected_answer.lower().split(",")]
+        # Fallback: keyword match na fragmentach z expected_answer
+        key_facts = question.key_facts
         fact_hits = sum(1 for f in key_facts if f in answer_lower)
         answer_score = fact_hits / len(key_facts) if key_facts else 1.0
 
@@ -114,8 +114,10 @@ async def evaluate_question(
     )
 
     return {
+        "id": question.id,
         "question": question.question,
         "category": question.category,
+        "variant": question.variant,
         "expected_docs": question.expected_docs,
         "answer_score": round(answer_score, 3),
         "citation_hit_rate": round(citation_hit, 3),
