@@ -112,8 +112,17 @@ class Settings(BaseSettings):
     bm25_weight: float = 0.5
     dense_weight: float = 0.5
 
-    # Reranker
+    # --- Reranker ---
+    # reranker_max_length: ile tokenów pary (zapytanie, chunk) widzi cross-encoder.
+    # Chunki taryfikatorów to duże tabele, więc przy 512 tokenach właściwy wiersz
+    # bywa poza obcięciem i model ocenia fragment, w którym odpowiedzi nie ma.
+    # ms-marco-MiniLM i bge-reranker-base obsługują 512; bge-reranker-v2-m3 do 8192.
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    reranker_max_length: int = 512
+    # Wyłączenie etapu rerankingu. Domyślnie włączony — wyłączaj wyłącznie
+    # na podstawie pomiaru z run_retrieval_evals, nie „dla uproszczenia"
+    # (CLAUDE.md §5.5).
+    reranker_enabled: bool = True
 
     # --- Generation ---
     # Limit kontekstu liczony w ZNAKACH, nie tokenach — generator przycina

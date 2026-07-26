@@ -122,7 +122,16 @@ class HybridRetriever:
         settings = get_settings()
         raw_dsn = str(settings.postgres_dsn).replace("postgresql+asyncpg://", "postgresql://")
         self._pool = await asyncpg.create_pool(dsn=raw_dsn, min_size=2, max_size=10)
-        self._reranker = CrossEncoderReranker(settings.reranker_model)
+        self._reranker = (
+            CrossEncoderReranker(settings.reranker_model, settings.reranker_max_length)
+            if settings.reranker_enabled
+            else None
+        )
+        if self._reranker is None:
+            logger.warning(
+                "Reranking WYŁĄCZONY (RERANKER_ENABLED=false) — kolejność wyników "
+                "pochodzi wprost z ważonego RRF"
+            )
         return self
 
     async def __aexit__(self, *_: object) -> None:
