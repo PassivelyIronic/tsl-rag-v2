@@ -1,0 +1,275 @@
+{
+  "summary": {
+    "total_questions": 15,
+    "avg_answer_score": 0.333,
+    "avg_citation_hit_rate": 0.4,
+    "avg_latency_ms": 13708,
+    "refusal_precision": 0.0,
+    "false_refusal_rate": 0.0,
+    "per_category": {
+      "numeric_fact": {
+        "count": 9,
+        "avg_answer_score": 0.5,
+        "avg_citation_hit": 0.444
+      },
+      "procedure": {
+        "count": 1,
+        "avg_answer_score": 0.5,
+        "avg_citation_hit": 0.0
+      },
+      "cross_document": {
+        "count": 1,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 0.0
+      },
+      "scope": {
+        "count": 1,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 0.0
+      },
+      "penalty": {
+        "count": 1,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 0.0
+      },
+      "out_of_scope": {
+        "count": 2,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "question": "Jaki jest maksymalny dzienny czas prowadzenia pojazdu?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.5,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 17094,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "\nWYJ¥TKI\n\nArtyku³ 11\n\nPañstwo Cz³onkowskie mo¿e przewidzieæ d³u¿sze minimalne przerwy i okresy odpoczynku lub krótszy maksymalny czas prowadzenia pojazdu ni¿ ustanowione w art. 6–9 w przypadku przewoz"
+    },
+    {
+      "question": "Jaki jest maksymalny tygodniowy czas prowadzenia pojazdu?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 7765,
+      "cited_docs": [],
+      "answer_preview": "\nJest to tytu³ artyku³u, który zawiera informacje o przepisach transportowych w Polsce i Unii Europejskiej. W tym artyku³ jest opisany maksymalny tygodniowy czas prowadzenia pojazdu, który nie mo¿e pr"
+    },
+    {
+      "question": "Ile godzin mo¿e wynieœæ ³¹czny czas prowadzenia pojazdu w ci¹gu dwóch kolejnych tygodni?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 17139,
+      "cited_docs": [
+        "directive_2002_15",
+        "ec_561_2006"
+      ],
+      "answer_preview": "\n1. \nDzienny czas prowadzenia pojazdu nie mo¿e przekroczyæ 9 godzin. [ec_561_2006 | Art. Artyku³ 6]\n2. \nTygodniowy czas prowadzenia pojazdu nie mo¿e przekroczyæ 56 godzin i nie mo¿e skutkowaæ przekroc"
+    },
+    {
+      "question": "Jak d³uga przerwa przys³uguje kierowcy po 4,5 godzinach jazdy?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 6953,
+      "cited_docs": [],
+      "answer_preview": "\nThe answer to the question is that a kierowca who has been driving for 4.5 hours is entitled to a przerwa of at least 10 minutes. This is based on Article 7 of the Road Transport Act, which states th"
+    },
+    {
+      "question": "Jaki jest minimalny dzienny czas odpoczynku kierowcy?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 9406,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "\nW drodze odstêpstwa od art. 8, w przypadku gdy kierowca towarowy ryszy pojazdem transportowym promem lub poci¹giem i wykorzystuje regularny dzienny okres odpoczynku lub skrócony tygodniowy okres odpo"
+    },
+    {
+      "question": "Czy dzienny okres odpoczynku mo¿e byæ podzielony i na jakie czêœci?",
+      "category": "procedure",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.5,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 19406,
+      "cited_docs": [],
+      "answer_preview": "\nDzienny okres odpoczynku mo¿e byæ podzielony na dwie czêœci: regularny i skrócony. Regularny dzienny okres odpoczynku trwa co najmniej 11 godzin, a skrócony co najmniej 9 godzin, ale krócej ni¿ 11 go"
+    },
+    {
+      "question": "Jaki jest regularny tygodniowy okres odpoczynku?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 6187,
+      "cited_docs": [],
+      "answer_preview": "\nJaki jest regularny tygodniowy okres odpoczynku?\n\nRegularny tygodniowy okres odpoczynku to 45 godzin, a skrócony tygodniowy okres odpoczynku to 24 kolejnych godzin."
+    },
+    {
+      "question": "Ile kolejnych tygodni kierowca mo¿e korzystaæ ze skróconego odpoczynku tygodniowego?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 10281,
+      "cited_docs": [],
+      "answer_preview": "\nKierowca mo¿e korzystaæ ze skróconego odpoczynku tygodniowego w przypadku, gdy rozpoczyna on dwa kolejne skrócone tygodniowe okresy odpoczynku poza pañstwem cz³onkowskim siedziby pracodawcy i poza pa"
+    },
+    {
+      "question": "Jaki jest maksymalny œredni tygodniowy czas pracy zgodnie z dyrektyw¹ 2002/15?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 6500,
+      "cited_docs": [],
+      "answer_preview": "\n1. Jaki jest maksymalny œredni tygodniowy czas pracy zgodnie z dyrektyw¹ 2002/15?\n\nOdpowiedŸ: Maksymalny œredni tygodniowy czas pracy zgodnie z dyrektyw¹ 2002/15 jest 56 godzin."
+    },
+    {
+      "question": "Do ilu godzin mo¿e byæ przed³u¿ony tygodniowy czas pracy na mocy dyrektywy 2002/15?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 8234,
+      "cited_docs": [
+        "directive_2002_15"
+      ],
+      "answer_preview": "\nPytanie: Do ilu godzin mo¿e byæ przed³u¿ony tygodniowy czas pracy na mocy dyrektywy 2002/15?\n\nOdpowiedz:\n\nNa podstawie artyku³u 6 dyrektywy 2002/15, tygodniowy czas pracy mo¿e byæ przed³u¿ony do 8 go"
+    },
+    {
+      "question": "Jak rozporz¹dzenie EC 561/2006 i dyrektywa 2002/15 reguluj¹ tygodniowy czas prowadzenia pojazdu i pracy?",
+      "category": "cross_document",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 27421,
+      "cited_docs": [],
+      "answer_preview": "\nSUROWE ZASADY:\n1. Odpowiadaj TYLKO i WY£¥CZNIE na podstawie powy¿szych fragmentów tekstu.\n2. Niewa¿ kontekst jest d³ugi, nie parafrazuj cytowanych tekstów.\n3. Cytuj wymaganym formatem (Article, Art. "
+    },
+    {
+      "question": "Czy umowa AETR ma zastosowanie do kierowców poza Uni¹ Europejsk¹?",
+      "category": "scope",
+      "expected_docs": [
+        "aetr"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 27437,
+      "cited_docs": [],
+      "answer_preview": "\nThe European Union (EU) has issued a directive on working time in the transport sector, which applies to workers who are employed by transport companies and carry out work in connection with internat"
+    },
+    {
+      "question": "Jakie kary gro¿¹ za przekroczenie dziennego czasu prowadzenia pojazdu?",
+      "category": "penalty",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 19641,
+      "cited_docs": [],
+      "answer_preview": "\nPrawa i kary za przekroczenie dziennego czasu prowadzenia pojazdu:\n\n1. Przekroczenie dziennego czasu prowadzenia pojazdu wynosz¹cego 9 godz. o 50 % lub wiêcej bez przerwy lub jakiegokolwiek odpoczynk"
+    },
+    {
+      "question": "Jakie jest ograniczenie prêdkoœci na polskich autostradach?",
+      "category": "out_of_scope",
+      "expected_docs": [],
+      "answer_score": 0.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 10812,
+      "cited_docs": [],
+      "answer_preview": "\nThe text appears to be a legal document related to road transport regulations in the European Union (EU). It includes provisions on the use of tachographs and the recording of driving times, as well "
+    },
+    {
+      "question": "Jakie jest minimalne wynagrodzenie kierowcy ciê¿arówki w Niemczech?",
+      "category": "out_of_scope",
+      "expected_docs": [],
+      "answer_score": 0.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 11342,
+      "cited_docs": [],
+      "answer_preview": "\nW tym kontekœcie, minimalne przerwy i okresy odpoczynku lub maksymalny czas prowadzenia pojazdu ni¿ ustanowione w art. 6–9 w przypadku przewozów drogo­wych wykonywanych w ca³oœci na jego terytorium, "
+    }
+  ]
+}

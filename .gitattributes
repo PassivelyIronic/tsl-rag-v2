@@ -1,0 +1,8 @@
+# Normalizacja końców linii: repo trzyma LF, checkout też LF.
+# Powód: kod jedzie do kontenera Linuksowego i do CI na ubuntu-latest,
+# a Makefile z CRLF wywala się pod GNU make.
+* text=auto eol=lf
+
+# Pliki binarne — bez konwersji i bez diffowania
+*.pdf binary
+uv.lock -diff

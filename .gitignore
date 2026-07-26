@@ -1,0 +1,33 @@
+# Środowisko Pythona
+__pycache__/
+*.py[cod]
+.venv/
+.cache/
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+
+# Sekrety — nigdy do repo (CLAUDE.md zasada #4)
+.env
+
+# Artefakty pośrednie ingestu — odtwarzalne z data/raw/
+data/processed/
+
+# WERSJONOWANE ŚWIADOMIE:
+#   data/raw/     — 14 PDF-ów aktów prawnych; korpus jest częścią systemu,
+#                   bez niego ingest nie jest odtwarzalny przy klonowaniu
+#   evals/results/ — jedyny dowód dla zasady "zero niezweryfikowanych liczb"
+#                   i baza historii regresji dla eval-gated CI
+
+.vscode/
+.idea/
+.ipynb_checkpoints/
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+*.log
+
+.streamlit/secrets.toml

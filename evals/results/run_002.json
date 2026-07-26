@@ -1,0 +1,287 @@
+{
+  "summary": {
+    "total_questions": 15,
+    "avg_answer_score": 0.633,
+    "avg_citation_hit_rate": 0.7,
+    "avg_latency_ms": 8504,
+    "refusal_precision": 1.0,
+    "false_refusal_rate": 0.077,
+    "per_category": {
+      "numeric_fact": {
+        "count": 9,
+        "avg_answer_score": 0.944,
+        "avg_citation_hit": 0.889
+      },
+      "procedure": {
+        "count": 1,
+        "avg_answer_score": 1.0,
+        "avg_citation_hit": 0.0
+      },
+      "cross_document": {
+        "count": 1,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 0.5
+      },
+      "scope": {
+        "count": 1,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 0.0
+      },
+      "penalty": {
+        "count": 1,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 0.0
+      },
+      "out_of_scope": {
+        "count": 2,
+        "avg_answer_score": 0.0,
+        "avg_citation_hit": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "question": "Jaki jest maksymalny dzienny czas prowadzenia pojazdu?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.5,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 16391,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "Maksymalny dzienny czas prowadzenia pojazdu wynosi 9 godzin. [ec_561_2006 | Art. 6(1)] Jednakże, dzienny czas prowadzenia pojazdu może zostać przedłużony do nie więcej niż 10 godzin nie częściej niż d"
+    },
+    {
+      "question": "Jaki jest maksymalny tygodniowy czas prowadzenia pojazdu?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 5202,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "Maksymalny tygodniowy czas prowadzenia pojazdu nie może przekroczyć 56 godzin. [ec_561_2006 | Art. 6 ust. 2]"
+    },
+    {
+      "question": "Ile godzin może wynieść łączny czas prowadzenia pojazdu w ciągu dwóch kolejnych tygodni?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 5218,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "Łączny czas prowadzenia pojazdu w ciągu dwóch kolejnych tygodni nie może przekroczyć 90 godzin. [ec_561_2006 | Art. 3]"
+    },
+    {
+      "question": "Jak długa przerwa przysługuje kierowcy po 4,5 godzinach jazdy?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": false,
+      "correctly_refused": false,
+      "incorrectly_refused": true,
+      "latency_ms": 10266,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "Przerwa przysługująca kierowcy po 4,5 godzinach jazdy wynosi co najmniej 45 minut. [ec_561_2006 | Art. 7]\n\nJeśli chodzi o przerwę w przypadku pracy w załodze kilkuosobowej, to kierowca może wykorzysta"
+    },
+    {
+      "question": "Jaki jest minimalny dzienny czas odpoczynku kierowcy?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 5281,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "Minimalny dzienny czas odpoczynku kierowcy wynosi 11 godzin. [ec_561_2006 | Art. 8(1)]"
+    },
+    {
+      "question": "Czy dzienny okres odpoczynku może być podzielony i na jakie części?",
+      "category": "procedure",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 12171,
+      "cited_docs": [],
+      "answer_preview": "Dzienny okres odpoczynku może być podzielony na dwie części: pierwsza część musi trwać co najmniej 3 godziny, a druga część co najmniej 9 godzin. Oznacza to, że kierowca może rozłożyć swój odpoczynek "
+    },
+    {
+      "question": "Jaki jest regularny tygodniowy okres odpoczynku?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 8828,
+      "cited_docs": [],
+      "answer_preview": "Regularny tygodniowy okres odpoczynku to 45 godzin. Jest to określenie zdefiniowane w art. 4 ust. 1 lit. h) rozporządzenia (WE) nr 561/2006 Parlamentu Europejskiego i Rady z dnia 15 marca 2006 r. usta"
+    },
+    {
+      "question": "Ile kolejnych tygodni kierowca może korzystać ze skróconego odpoczynku tygodniowego?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 7186,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "answer_preview": "Zgodnie z art. 8 ust. 6 rozporządzenia (WE) nr 561/2006, kierowca może korzystać ze skróconego odpoczynku tygodniowego maksymalnie przez dwa kolejne okresy dwudziestoczterogodzinne.\nCytowanie: [ec_561"
+    },
+    {
+      "question": "Jaki jest maksymalny średni tygodniowy czas pracy zgodnie z dyrektywą 2002/15?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 5750,
+      "cited_docs": [
+        "directive_2002_15"
+      ],
+      "answer_preview": "Maksymalny średni tygodniowy czas pracy nie może przekroczyć 48 godzin. [directive_2002_15 | Art. 4(a)]"
+    },
+    {
+      "question": "Do ilu godzin może być przedłużony tygodniowy czas pracy na mocy dyrektywy 2002/15?",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "answer_score": 1.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 5938,
+      "cited_docs": [
+        "directive_2002_15"
+      ],
+      "answer_preview": "Maksymalny tygodniowy czas pracy może być przedłużony do 60 godzin jedynie wówczas, gdy w ciągu czterech miesięcy nie została przekroczona średnia 48 godzin na tydzień. [directive_2002_15 | Art. 4(a)]"
+    },
+    {
+      "question": "Jak rozporządzenie EC 561/2006 i dyrektywa 2002/15 regulują tygodniowy czas prowadzenia pojazdu i pracy?",
+      "category": "cross_document",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.5,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 11750,
+      "cited_docs": [
+        "ec_561_2006",
+        "eu_2020_1054"
+      ],
+      "answer_preview": "Rozporządzenie EC 561/2006 i dyrektywa 2002/15 regulują tygodniowy czas prowadzenia pojazdu i pracy.\n\nZgodnie z art. 8 rozporządzenia EC 561/2006, kierowca nie może prowadzić pojazdu więcej niż 56 god"
+    },
+    {
+      "question": "Czy umowa AETR ma zastosowanie do kierowców poza Unią Europejską?",
+      "category": "scope",
+      "expected_docs": [
+        "aetr"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 12000,
+      "cited_docs": [
+        "directive_2002_15"
+      ],
+      "answer_preview": "Odpowiedź: Tak, umowa AETR ma zastosowanie do kierowców poza Unią Europejską.\n\nZgodnie z art. 2 dyrektywy 2002/15/WE, zakres stosowania niniejszej dyrektywy obejmuje pracowników wykonujących czynności"
+    },
+    {
+      "question": "Jakie kary grożą za przekroczenie dziennego czasu prowadzenia pojazdu?",
+      "category": "penalty",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "answer_score": 0.0,
+      "citation_hit_rate": 0.0,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 11578,
+      "cited_docs": [],
+      "answer_preview": "Przekroczenie dziennego czasu prowadzenia pojazdu wynoszącego 9 godz. o 50% lub więcej bez przerwy lub jakiegokolwiek odpoczynku trwającego co najmniej 4,5 godz. grozi karą w wysokości X (nie określon"
+    },
+    {
+      "question": "Jakie jest ograniczenie prędkości na polskich autostradach?",
+      "category": "out_of_scope",
+      "expected_docs": [],
+      "answer_score": 0.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": false,
+      "correctly_refused": true,
+      "incorrectly_refused": false,
+      "latency_ms": 5281,
+      "cited_docs": [],
+      "answer_preview": "Nie mogę odpowiedzieć na to pytanie na podstawie dostępnych dokumentów."
+    },
+    {
+      "question": "Jakie jest minimalne wynagrodzenie kierowcy ciężarówki w Niemczech?",
+      "category": "out_of_scope",
+      "expected_docs": [],
+      "answer_score": 0.0,
+      "citation_hit_rate": 1.0,
+      "has_answer": false,
+      "correctly_refused": true,
+      "incorrectly_refused": false,
+      "latency_ms": 4718,
+      "cited_docs": [],
+      "answer_preview": "Nie mogę odpowiedzieć na to pytanie na podstawie dostępnych dokumentów."
+    }
+  ]
+}
