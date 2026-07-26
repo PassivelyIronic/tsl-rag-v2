@@ -154,7 +154,43 @@ Zostaje:
       przebieg bez kosztu i bez klucza API, czyli nadaje się do CI. Odpowiada też na pytanie,
       czy reranker pomaga, czy szkodzi
 - [ ] **Ustalić progi bramkujące na metrykach retrievalu** i zapisać w `evals/thresholds.yaml`.
-      Punkt odniesienia: `retrieval_recall = 0.867` powtarzalny w trzech przebiegach
+      Punkt odniesienia: `recall@5` po rerankingu = 0.854, powtarzalny
+
+### Zmierzone wąskie gardło: cross-encoder, nie fuzja ani embeddingi
+
+Trzy przebiegi ewaluatora retrievalu na 48 pytaniach dają spójny obraz
+(`evals/results/retrieval_001`, `retrieval_002`, `retrieval_sweep_*`):
+
+| Wagi BM25/dense | `fused` recall@5 | `fused` MRR | po rerankingu recall@5 |
+|---|---|---|---|
+| 0.5 / 0.5 (obecne) | 0.823 | 0.719 | 0.854 |
+| 0.7 / 0.3 | 0.865 | 0.727 | 0.854 |
+| 0.85 / 0.15 | 0.896 | 0.750 | 0.854 |
+| 1.0 / 0.0 (BM25 sam) | **0.948** | **0.833** | 0.854 |
+
+Wnioski, wszystkie sprzeczne z założeniami architektury:
+
+1. **Dense nie wnosi nic przy żadnej wadze.** `recall@5` fuzji rośnie
+   monotonicznie, im mniejszy udział dense'a, aż do 0.948 przy jego wyłączeniu.
+   `nomic-embed-text` na polskim tekście prawnym daje sam z siebie 0.729.
+2. **Reranker jest wąskim gardłem, nie fuzja.** Po rerankingu `recall@5`
+   wynosi 0.854 **niezależnie od wag** — bo cross-encoder przestawia ten sam
+   zbiór 20 kandydatów (`recall@20` = 0.979 wszędzie). Przy BM25-only kosztuje
+   to 0.094 recall@5 i 0.097 MRR względem samej fuzji.
+3. Prawdopodobna przyczyna: `ms-marco-MiniLM-L-6-v2` to model **angielski**,
+   stosowany do polskiego tekstu prawnego.
+
+Do rozstrzygnięcia (zmiana architektury, wymaga świadomej decyzji — zasada #5
+w `CLAUDE.md` zabrania usuwania elementów retrievalu „dla uproszczenia", ale
+tu jest zmierzona szkoda, nie uproszczenie):
+
+- [ ] Zmierzyć wielojęzyczny cross-encoder (`BAAI/bge-reranker-v2-m3` albo
+      `bge-reranker-base`) w miejsce modelu angielskiego
+- [ ] Jeśli żaden reranker nie bije samej fuzji — rozważyć wyłączenie etapu
+      rerankingu i podniesienie `bm25_weight`, z jawnym uzasadnieniem w tabeli
+      §6.3 `CLAUDE.md`
+- [ ] Nie zmieniać wag na produkcji przed rozstrzygnięciem rerankera: przy
+      obecnym rerankerze wagi nie mają wpływu na wynik końcowy
 - [x] **Format datasetu** — `questions.json` + walidacja przy wczytaniu i w testach,
       specyfikacja i prompt do generowania w `docs/GOLDEN_DATASET.md`
 - [x] **Golden dataset rozszerzony z 15 do 56 pytań** (2026-07-26), min. 6 na kategorię.
@@ -208,6 +244,13 @@ jakości z modelu referencyjnego (❌).
 
 Blocker celu podstawowego. Embedding liczony jest przy **każdym** zapytaniu, nie tylko
 przy ingeście — to najbardziej wrażliwy na awarię punkt pipeline'u.
+
+Faza 1 dała tej fazie drugie, mocniejsze uzasadnienie: `nomic-embed-text` osiąga
+`recall@5` = 0.729 na polskim tekście prawnym i **nie wnosi nic do fuzji przy żadnej
+wadze**. Wymiana embeddingów przestała być wyłącznie kwestią odcięcia od GPU — jest
+też kandydatem na realną poprawę jakości. Narzędzie do zmierzenia tego istnieje
+(`run_retrieval_evals.py`), a `bge-m3` jest już pobrany lokalnie w Ollamie (1.16 GB),
+więc porównanie da się zrobić bez pobierania wag.
 
 - [ ] Rozszerzyć `embedding_provider` o `"local"` (`sentence-transformers`, in-process, CPU)
 - [ ] A/B kandydatów metrykami z Fazy 1, nie „na oko":
