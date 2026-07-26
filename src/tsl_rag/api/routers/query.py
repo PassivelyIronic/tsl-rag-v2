@@ -2,53 +2,76 @@ from __future__ import annotations
 
 from typing import Annotated
 
-import asyncpg
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from tsl_rag.core.llm_client import get_embedding, get_llm_client
-from tsl_rag.core.models import QueryResponse, RetrievalRequest
+from tsl_rag.core.models import (
+    DocumentChunk,
+    DocumentType,
+    QueryResponse,
+    RetrievalRequest,
+    RetrievedChunk,
+)
 from tsl_rag.core.settings import Settings, get_settings
 from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
 
 router = APIRouter(prefix="/query", tags=["query"])
 
+# Komunikaty dla użytkownika końcowego — po polsku i mówiące, co zrobić.
+# Użytkownik docelowy jest nietechniczny, stacktrace nic mu nie mówi
+# (CLAUDE.md §1).
+_MSG_NOT_READY = (
+    "System nie ma teraz połączenia z bazą dokumentów prawnych. "
+    "Odczekaj chwilę i zadaj pytanie ponownie. Jeśli to się powtarza, "
+    "baza danych prawdopodobnie nie jest uruchomiona."
+)
+_MSG_GENERATION_FAILED = (
+    "Nie udało się uzyskać odpowiedzi od modelu językowego. "
+    "Zwykle znaczy to, że darmowy limit zapytań został chwilowo wyczerpany "
+    "albo usługa jest przeciążona. Spróbuj ponownie za kilka minut."
+)
+
 
 class QueryRequest(BaseModel):
     query: str = Field(..., min_length=5, max_length=1000)
-    top_k: int = Field(default=20, ge=1, le=50)
-    rerank_top_n: int = Field(default=5, ge=1, le=20)
+    top_k: int = Field(default_factory=lambda: get_settings().retrieval_top_k, ge=1, le=50)
+    rerank_top_n: int = Field(
+        default_factory=lambda: get_settings().retrieval_rerank_top_n, ge=1, le=20
+    )
     filter_document_type: str | None = None
     filter_contains_penalty: bool | None = None
     debug: bool = False  # zwraca raw chunks w odpowiedzi
 
 
-class HealthResponse(BaseModel):
-    status: str
-    postgres: str
-    ollama: str
+def get_retriever(request: Request) -> HybridRetriever:
+    """
+    Zwraca retriever utworzony raz w lifespanie aplikacji (patrz api/app.py).
 
-
-async def get_retriever() -> HybridRetriever:
-    """Dependency: tworzy i zwraca HybridRetriever."""
-    retriever = HybridRetriever()
-    await retriever.__aenter__()
+    Poprzednia wersja tworzyła nowy HybridRetriever per request, a osobna,
+    nieużywana funkcja o tej nazwie wołała __aenter__ bez __aexit__, czyli
+    wyciekałaby pool połączeń przy każdym wywołaniu.
+    """
+    retriever = getattr(request.app.state, "retriever", None)
+    if retriever is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=_MSG_NOT_READY,
+        )
     return retriever
 
 
 @router.post("", response_model=QueryResponse)
 async def query_rag(
     request: QueryRequest,
+    retriever: Annotated[HybridRetriever, Depends(get_retriever)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> QueryResponse:
     """
     Główny endpoint RAG.
     Przyjmuje pytanie, zwraca odpowiedź z cytowaniami.
     """
-    from tsl_rag.core.models import DocumentType
-
     doc_type = None
     if request.filter_document_type:
         try:
@@ -56,8 +79,8 @@ async def query_rag(
         except ValueError:
             raise HTTPException(
                 status_code=422,
-                detail=f"Invalid document_type '{request.filter_document_type}'. "
-                f"Valid: {[e.value for e in DocumentType]}",
+                detail=f"Nieprawidłowy document_type '{request.filter_document_type}'. "
+                f"Dopuszczalne: {[e.value for e in DocumentType]}",
             ) from None
 
     retrieval_request = RetrievalRequest(
@@ -68,21 +91,33 @@ async def query_rag(
         filter_contains_penalty=request.filter_contains_penalty,
     )
 
-    async with HybridRetriever() as retriever:
+    try:
         results = await retriever.retrieve(retrieval_request)
+    except Exception as exc:
+        logger.error(f"Retrieval nieudany: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=_MSG_NOT_READY,
+        ) from exc
 
     if not results:
-        logger.warning(f"No retrieval results for query: '{request.query[:60]}'")
+        logger.warning(f"Brak wyników retrievalu dla: '{request.query[:60]}'")
 
     generator = RAGGenerator()
-    response = await generator.generate(request.query, results)
-    if request.debug:
-        from tsl_rag.core.models import DocumentChunk, RetrievedChunk
+    try:
+        response = await generator.generate(request.query, results)
+    except Exception as exc:
+        logger.error(f"Generacja nieudana ({settings.active_llm_model}): {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_MSG_GENERATION_FAILED,
+        ) from exc
 
+    if request.debug:
         response.retrieved_chunks = [
             RetrievedChunk(
                 chunk=DocumentChunk(
-                    chunk_id=r.chunk.chunk_id,  # type: ignore[arg-type]
+                    chunk_id=r.chunk.chunk_id,
                     content=r.chunk.text,
                     metadata=r.chunk.metadata,
                 ),
@@ -97,39 +132,12 @@ async def query_rag(
     return response
 
 
-@router.get("/health", response_model=HealthResponse)
-async def health_check(
-    settings: Annotated[Settings, Depends(get_settings)],
-) -> HealthResponse:
-    """Sprawdza połączenia z zależnościami."""
-    postgres_status = "ok"
-    ollama_status = "ok"
-
-    try:
-        raw_dsn = str(settings.postgres_dsn).replace("postgresql+asyncpg://", "postgresql://")
-        conn = await asyncpg.connect(dsn=raw_dsn)
-        await conn.fetchval("SELECT 1")
-        await conn.close()
-    except Exception as e:
-        postgres_status = f"error: {e}"
-
-    try:
-        client = get_llm_client(settings)
-        await get_embedding("health check", settings, client)
-    except Exception as e:
-        ollama_status = f"error: {e}"
-
-    overall = "ok" if postgres_status == "ok" and ollama_status == "ok" else "degraded"
-    return HealthResponse(status=overall, postgres=postgres_status, ollama=ollama_status)
-
-
 @router.get("/documents")
 async def get_documents() -> dict[str, str]:
     """
-    Zwraca listę obsługiwanych dokumentów.
-    Dzięki temu UI nie musi mieć ich zaszytych na sztywno.
+    Zwraca listę obsługiwanych dokumentów, żeby UI nie miało ich zaszytych
+    na sztywno. Klucze to identyfikatory używane w cytowaniach.
     """
     from tsl_rag.ingestion.cli import DOCUMENT_REGISTRY
 
-    # Tworzymy prosty słownik { "ID_DOKUMENTU": "Tytuł dokumentu" }
-    return {doc_id: meta["title"] for doc_id, meta in DOCUMENT_REGISTRY.items()}
+    return {doc_id.lower(): meta["title"] for doc_id, meta in DOCUMENT_REGISTRY.items()}

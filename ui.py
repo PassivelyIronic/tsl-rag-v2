@@ -3,6 +3,7 @@ import os
 
 import httpx
 import streamlit as st
+from loguru import logger
 
 # ── Page config ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -12,7 +13,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-API_URL = os.getenv("API_URL", "http://localhost:8000/query")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
+API_URL = f"{API_BASE_URL}/query"
 
 # ── Custom CSS ─────────────────────────────────────────────────────────────
 st.markdown(
@@ -186,13 +188,21 @@ with st.sidebar:
         )
 
     st.markdown("---")
-    # Health check
+    # Stan systemu — /ready, nie /query/health (ten drugi już nie istnieje).
+    # Nazwy providerów bierzemy z odpowiedzi, a nie zaszywamy w UI, bo
+    # EMBEDDING_PROVIDER i CHAT_PROVIDER są niezależnie przełączalne.
     try:
-        health = httpx.get("http://localhost:8000/query/health", timeout=3.0).json()
-        pg = "🟢" if health.get("postgres") == "ok" else "🔴"
-        llm = "🟢" if health.get("ollama") == "ok" else "🔴"
+        ready = httpx.get(f"{API_BASE_URL}/ready", timeout=5.0).json()
+        checks = ready.get("checks", {})
+        pg = "🟢" if checks.get("postgres") == "ok" else "🔴"
+        emb = "🟢" if checks.get("embeddings") == "ok" else "🔴"
         st.markdown(f"{pg} PostgreSQL / pgvector")
-        st.markdown(f"{llm} Ollama (LLM + embed)")
+        st.markdown(f"{emb} Embeddingi ({ready.get('embedding_provider', '?')})")
+        st.markdown(
+            f'<div style="font-size:0.72rem;color:#6e7681;margin-top:0.3rem">'
+            f'model: {ready.get("chat_model", "?")}</div>',
+            unsafe_allow_html=True,
+        )
     except Exception:
         st.markdown("🔴 API niedostępne")
 
@@ -352,7 +362,10 @@ if prompt := st.chat_input("Zadaj pytanie o przepisach transportowych UE…"):
                             cols[1].caption(f"dense {chunk['dense_score']:.3f}")
                             cols[2].caption(f"bm25 {chunk['bm25_score']:.2f}")
                             cols[3].caption(f"rrf {chunk['hybrid_score']:.4f}")
-                            cols[4].caption(f"rerank {chunk.get('rerank_score', 0):.2f}")
+                            # 'or 0' bo rerank_score jest None dla chunków,
+                            # które nie przeszły przez cross-encoder — samo
+                            # .get(..., 0) zwraca wtedy None i formatowanie wybucha
+                            cols[4].caption(f"rerank {chunk.get('rerank_score') or 0:.2f}")
                             st.caption(chunk["chunk"]["content"][:300] + "…")
                             if i < len(chunks) - 1:
                                 st.divider()
@@ -369,9 +382,33 @@ if prompt := st.chat_input("Zadaj pytanie o przepisach transportowych UE…"):
                 )
 
             else:
-                st.error(f"Błąd API: {resp.status_code} — {resp.text[:200]}")
+                # API zwraca w 'detail' komunikat po polsku, zrozumiały dla
+                # nietechnicznego użytkownika. Pokazujemy jego, nie kod HTTP.
+                try:
+                    detail = resp.json().get("detail")
+                except Exception:
+                    detail = None
+                if isinstance(detail, str) and detail:
+                    st.warning(detail)
+                else:
+                    st.error(
+                        "Coś poszło nie tak po stronie systemu i nie udało się "
+                        "przygotować odpowiedzi. Spróbuj ponownie za kilka minut."
+                    )
 
         except httpx.ConnectError:
-            st.error("❌ Nie można połączyć z API. Upewnij się że `uv run python main.py` działa.")
+            st.error(
+                "Nie mogę połączyć się z częścią systemu odpowiadającą za wyszukiwanie. "
+                "Uruchom ją komendą: uv run python -m tsl_rag.api.main"
+            )
+        except httpx.ReadTimeout:
+            st.error(
+                "Odpowiedź nie przyszła w wyznaczonym czasie. Darmowe modele bywają "
+                "przeciążone — spróbuj ponownie za kilka minut."
+            )
         except Exception as e:
-            st.error(f"Błąd: {e}")
+            logger.exception("Nieobsłużony błąd w UI")
+            st.error(
+                "Wystąpił nieoczekiwany błąd. Szczegóły techniczne: "
+                f"{type(e).__name__}. Spróbuj ponownie."
+            )

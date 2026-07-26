@@ -113,6 +113,19 @@ class HybridRetriever:
 
     # Public API
 
+    async def warmup(self) -> None:
+        """
+        Buduje indeks BM25 i ładuje cross-encoder z wyprzedzeniem.
+
+        Wołane raz w lifespanie API, żeby pierwsze zapytanie użytkownika
+        nie płaciło za wczytanie korpusu i modelu rerankera. Bez tego pierwsze
+        pytanie jest wyraźnie wolniejsze od kolejnych, co przy latencji
+        rzędu dwudziestu sekund jest różnicą odczuwalną.
+        """
+        await self._ensure_bm25_index()
+        if self._reranker:
+            self._reranker.load()
+
     async def retrieve(self, request: RetrievalRequest) -> list[RetrievalResult]:
         """
         Główna metoda. Zwraca listę RetrievalResult posortowaną malejąco

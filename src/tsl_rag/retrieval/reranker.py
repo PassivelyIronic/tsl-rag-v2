@@ -35,7 +35,11 @@ class CrossEncoderReranker:
         self.model_name = model_name
         self._model: CrossEncoder | None = None
 
-    def _load(self) -> CrossEncoder:
+    def load(self) -> CrossEncoder:
+        """
+        Ładuje model, jeśli jeszcze nie jest wczytany. Publiczne, bo API woła
+        to przy starcie (prewarm), a nie dopiero przy pierwszym zapytaniu.
+        """
         if self._model is None:
             logger.info(f"Loading cross-encoder: {self.model_name}")
             self._model = CrossEncoder(self.model_name, max_length=512)
@@ -53,7 +57,7 @@ class CrossEncoderReranker:
         if not candidates:
             return []
 
-        model = self._load()
+        model = self.load()
         pairs = [(query, text) for text in candidates]
         scores = model.predict(pairs, show_progress_bar=False)
 
