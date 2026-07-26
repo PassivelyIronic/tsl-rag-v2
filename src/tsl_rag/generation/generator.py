@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import time
 from textwrap import dedent
 
@@ -37,9 +38,6 @@ SYSTEM_PROMPT = dedent("""\
 
 _NO_ANSWER_MARKER = "Nie mogę odpowiedzieć"
 
-# Max tokenów kontekstu (zachowawczo — mistral 7b ma 8k okno)
-_MAX_CONTEXT_CHARS = 12_000
-
 
 class RAGGenerator:
     """
@@ -60,7 +58,7 @@ class RAGGenerator:
         settings = get_settings()
         client = get_chat_client(settings)
 
-        context_block, used_results = _build_context(results)
+        context_block, used_results = _build_context(results, settings.max_context_chars)
 
         user_message = _build_user_message(query, context_block)
 
@@ -103,10 +101,12 @@ class RAGGenerator:
 
 def _build_context(
     results: list[RetrievalResult],
+    max_context_chars: int,
 ) -> tuple[str, list[RetrievalResult]]:
     """
     Buduje blok kontekstu z chunków.
-    Przycina do _MAX_CONTEXT_CHARS, zachowując najlepiej ocenione chunki.
+    Przycina do max_context_chars (Settings), zachowując najlepiej ocenione
+    chunki — lista wchodzi tu już posortowana po final_score.
     Zwraca (context_text, użyte_results).
     """
     lines: list[str] = []
@@ -126,7 +126,7 @@ def _build_context(
 
         block = f"[{header}]\n{chunk.text}\n"
 
-        if total_chars + len(block) > _MAX_CONTEXT_CHARS:
+        if total_chars + len(block) > max_context_chars:
             logger.debug(f"Context limit reached at chunk {chunk.chunk_id}")
             break
 
@@ -158,8 +158,6 @@ def _extract_citations(
     Parsuje cytowania z formatu [doc_id | Art. X] w tekście odpowiedzi.
     Mapuje z powrotem na pełne metadane chunka.
     """
-    import re
-
     by_doc: dict[str, list[RetrievalResult]] = {}
     for r in used_results:
         did = r.chunk.metadata.document_id

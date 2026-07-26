@@ -5,6 +5,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from tsl_rag.core.settings import get_settings
+
 
 class DocumentType(StrEnum):
     EU_REGULATION = "eu_regulation"
@@ -65,9 +67,16 @@ class RetrievedChunk(BaseModel):
 
 
 class RetrievalRequest(BaseModel):
+    """
+    Domyślne top_k / rerank_top_n pochodzą z Settings, nie z hardkodu —
+    dzięki temu RETRIEVAL_TOP_K i RETRIEVAL_RERANK_TOP_N w .env faktycznie
+    działają. Wcześniej te dwa pola były zaszyte na 20/5, a odpowiadające
+    im pola w Settings nie były czytane przez nikogo.
+    """
+
     query: str
-    top_k: int = 20
-    rerank_top_n: int = 5
+    top_k: int = Field(default_factory=lambda: get_settings().retrieval_top_k)
+    rerank_top_n: int = Field(default_factory=lambda: get_settings().retrieval_rerank_top_n)
     filter_document_ids: list[str] | None = None
     filter_document_type: DocumentType | None = None
     filter_contains_penalty: bool | None = None

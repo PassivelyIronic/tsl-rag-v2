@@ -10,6 +10,11 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        # extra="forbid" jest domyślne, ale zapisane jawnie, bo to źródło
+        # częstego błędu: zmienna w .env bez odpowiednika tutaj wywala start
+        # komunikatem "Extra inputs are not permitted". Dodając pole tutaj,
+        # dodaj je też do env.example (CLAUDE.md §9).
+        extra="forbid",
     )
 
     # App
@@ -40,7 +45,11 @@ class Settings(BaseSettings):
     # Darmowe modele (":free") — lista zmienia się bez ostrzeżenia, sprawdź:
     # https://openrouter.ai/models?max_price=0
     openrouter_api_key: SecretStr | None = None
-    openrouter_chat_model: str = "meta-llama/llama-3.3-70b-instruct:free"
+    # Domyślny slug = jedyny model zweryfikowany empirycznie w tym projekcie
+    # (patrz evals/results/model_comparison.json). Poprzedni domyślny
+    # llama-3.3-70b-instruct:free zwracał 429 w 3/3 próbach z backoffem.
+    # Slug zmieniaj tylko po sprawdzeniu w zakładce API modelu (CLAUDE.md §5.3).
+    openrouter_chat_model: str = "nvidia/nemotron-nano-9b-v2:free"
 
     # Gemini (opcjonalne, pod ewaluację — LLM-as-a-judge)
     gemini_api_key: SecretStr | None = None
@@ -65,22 +74,36 @@ class Settings(BaseSettings):
 
     postgres_dsn: PostgresDsn
 
-    # Retrieval
+    # --- Retrieval ---
+    # Wszystkie te wartości są faktycznie odczytywane w ścieżce zapytania
+    # (RetrievalRequest, _reciprocal_rank_fusion). Do commita 92ab634 były
+    # martwe: kod miał własne hardkody, a strojenie przez .env nie robiło nic.
     retrieval_top_k: int = 20
-    retrieval_rerank_top_n: int = 7
+    retrieval_rerank_top_n: int = 5
+    # Wagi RRF. 0.5/0.5 = obie listy rankingowe równoważne, czyli dokładnie
+    # to, co robił nieważony RRF przed podłączeniem tych pól. Zmiana proporcji
+    # zmienia ranking, więc wymaga przebiegu evalu przed/po (CLAUDE.md §9).
     bm25_weight: float = 0.5
     dense_weight: float = 0.5
 
     # Reranker
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-    # Generation
-    max_context_tokens: int = 4096
-    max_answer_tokens: int = 1024
+    # --- Generation ---
+    # Limit kontekstu liczony w ZNAKACH, nie tokenach — generator przycina
+    # kontekst po długości stringa. Poprzednie max_context_tokens=4096 nie
+    # było nigdzie używane i sugerowało limit tokenowy, którego nie ma.
+    max_context_chars: int = 12_000
 
-    # Ingestion
-    chunk_size: int = 400
-    chunk_overlap: int = 50
+    # --- Ingestion ---
+    # Parametry chunkera. Wartości odpowiadają temu, co LegalChunker robił
+    # dotąd na swoich stałych modułowych. Poprzednie chunk_size=400 /
+    # chunk_overlap=50 były nie tylko martwe, ale też niezgodne z faktycznym
+    # zachowaniem (450/60) — strojenie ich wprowadzało w błąd.
+    # Zmiana tych wartości wymaga ponownego ingestu całego korpusu.
+    chunker_max_tokens: int = 450
+    chunker_min_tokens: int = 60
+    chunker_overlap_tokens: int = 60
     raw_data_dir: str = "data/raw"
     processed_data_dir: str = "data/processed"
 

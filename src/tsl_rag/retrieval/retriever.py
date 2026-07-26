@@ -139,8 +139,13 @@ class HybridRetriever:
             top_k=request.top_k,
         )
 
-        # 4. RRF fusion
-        fused = _reciprocal_rank_fusion(dense_results, bm25_results)
+        # 4. RRF fusion (ważony — wagi z Settings)
+        fused = _reciprocal_rank_fusion(
+            dense_results,
+            bm25_results,
+            dense_weight=settings.dense_weight,
+            bm25_weight=settings.bm25_weight,
+        )
 
         # Bierzemy top_k po fuzji do rerankingu
         candidates = fused[: request.top_k]
@@ -256,22 +261,29 @@ def _reciprocal_rank_fusion(
     dense: list[RetrievalResult],
     bm25: list[RetrievalResult],
     k: int = _RRF_K,
+    dense_weight: float = 0.5,
+    bm25_weight: float = 0.5,
 ) -> list[RetrievalResult]:
     """
-    Łączy dwie listy rankingowe przez Reciprocal Rank Fusion.
-    score(d) = Σ 1 / (k + rank(d))
+    Łączy dwie listy rankingowe przez ważony Reciprocal Rank Fusion.
+    score(d) = Σ waga_listy / (k + rank(d))
+
+    Wagi pochodzą z Settings (bm25_weight / dense_weight) i sumują się do 1.0
+    (wymuszone walidatorem). Przy 0.5/0.5 obie listy są równoważne, czyli
+    ranking jest identyczny z wcześniejszą wersją nieważoną — wagi wchodziły
+    do RRF jako wspólny czynnik skalujący, a to nie zmienia kolejności.
     """
     scores: dict[str, float] = {}
     by_id: dict[str, RetrievalResult] = {}
 
     for rank, result in enumerate(dense):
         cid = result.chunk.chunk_id
-        scores[cid] = scores.get(cid, 0.0) + 1.0 / (k + rank + 1)
+        scores[cid] = scores.get(cid, 0.0) + dense_weight / (k + rank + 1)
         by_id[cid] = result
 
     for rank, result in enumerate(bm25):
         cid = result.chunk.chunk_id
-        scores[cid] = scores.get(cid, 0.0) + 1.0 / (k + rank + 1)
+        scores[cid] = scores.get(cid, 0.0) + bm25_weight / (k + rank + 1)
         if cid not in by_id:
             by_id[cid] = result
         else:
