@@ -20,6 +20,7 @@ import typer
 from loguru import logger
 
 from tsl_rag.core.models import DocumentType
+from tsl_rag.core.settings import get_settings
 from tsl_rag.ingestion.chunkers.legal_chunker import LegalChunker
 from tsl_rag.ingestion.embedders.embedder import ChunkEmbedder
 from tsl_rag.ingestion.parsers.legal_pdf_parser import LegalPDFParser
@@ -70,6 +71,10 @@ DOCUMENT_REGISTRY: dict[str, dict] = {
         "doc_type": DocumentType.PENALTY_TARIFF,
         "title": "Taryfikator dla zarządzającego (2022)",
     },
+    "TARIFF_EMPLOYER_2022": {
+        "doc_type": DocumentType.PENALTY_TARIFF,
+        "title": "Taryfikator dla pracodawcy (2022)",
+    },
 }
 
 
@@ -97,7 +102,7 @@ def ingest(
         raise typer.Exit(1) from None
 
     asyncio.run(
-        _run_pipeline(
+        _ingest_one(
             pdf_path=pdf_path,
             doc_id=doc_id,
             document_type=document_type,
@@ -120,32 +125,21 @@ def ingest_all(
         raise typer.Exit(1)
 
     typer.echo(f"Znaleziono {len(pdfs)} plików PDF\n")
-    total_stats: dict = {"total": 0, "stored": 0, "failed": 0}
 
-    for pdf in pdfs:
-        stem = pdf.stem.upper()
-        if stem not in DOCUMENT_REGISTRY:
-            typer.echo(f"  SKIP  {pdf.name} — brak wpisu w DOCUMENT_REGISTRY")
-            continue
+    # Jeden asyncio.run() na CAŁĄ pętlę, nie per plik. Poprzednia wersja
+    # otwierała i zamykała event loop 14 razy, co na Windows (ProactorEventLoop)
+    # kończyło się serią "RuntimeError: Event loop is closed" z httpx.AsyncClient
+    # przy zamykaniu. Efekt był kosmetyczny, ale zaśmiecał wyjście na tyle,
+    # że trudno było odróżnić prawdziwy błąd ingestu od hałasu.
+    summary = asyncio.run(_ingest_all_async(pdfs, batch_size))
 
-        meta = DOCUMENT_REGISTRY[stem]
-        doc_id = stem.lower()
-        typer.echo(f"  →  {pdf.name}")
-
-        stats = asyncio.run(
-            _run_pipeline(
-                pdf_path=pdf,
-                doc_id=doc_id,
-                document_type=meta["doc_type"],
-                title=meta["title"],
-                batch_size=batch_size,
-            )
-        )
-
-        for k in total_stats:
-            total_stats[k] += stats.get(k, 0)
-
-    typer.echo(f"\nGotowe. Łącznie: {total_stats}")
+    typer.echo(
+        f"\nGotowe. Plików: {summary['files_ok']}/{len(pdfs)} "
+        f"(pominięte: {summary['files_skipped']}), "
+        f"chunki: stored={summary['stored']}, failed={summary['failed']}"
+    )
+    if summary["failed"]:
+        raise typer.Exit(1)
 
 
 # ---------------------------------------------------------------------------
@@ -153,7 +147,40 @@ def ingest_all(
 # ---------------------------------------------------------------------------
 
 
-async def _run_pipeline(
+def _parse_and_chunk(
+    pdf_path: Path,
+    doc_id: str,
+    document_type: DocumentType,
+    title: str,
+    jurisdiction: str = "EU",
+) -> list:
+    """Etapy synchroniczne: PDF → elementy → chunki. Bez sieci i bez bazy."""
+    settings = get_settings()
+
+    parser = LegalPDFParser(doc_type=document_type)
+    elements = parser.parse(pdf_path)
+    if not elements:
+        logger.warning(f"[{doc_id}] Parser zwrócił 0 elementów — pomijam")
+        return []
+
+    chunker = LegalChunker(
+        document_id=doc_id,
+        document_type=document_type,
+        document_title=title,
+        jurisdiction=jurisdiction,
+        # Parametry z Settings — wcześniej chunker zawsze jechał na swoich
+        # stałych modułowych, a CHUNK_SIZE/CHUNK_OVERLAP w .env nic nie robiły.
+        max_tokens=settings.chunker_max_tokens,
+        min_tokens=settings.chunker_min_tokens,
+        overlap_tokens=settings.chunker_overlap_tokens,
+    )
+    chunks = chunker.chunk(elements)
+    if not chunks:
+        logger.warning(f"[{doc_id}] Chunker zwrócił 0 chunków — pomijam")
+    return chunks
+
+
+async def _ingest_one(
     pdf_path: Path,
     doc_id: str,
     document_type: DocumentType,
@@ -161,37 +188,63 @@ async def _run_pipeline(
     jurisdiction: str = "EU",
     batch_size: int = 16,
 ) -> dict:
-    # 1. Parse
-    parser = LegalPDFParser(doc_type=document_type)
-    elements = parser.parse(pdf_path)
-
-    if not elements:
-        logger.warning(f"[{doc_id}] Parser zwrócił 0 elementów — pomijam")
-        return {"total": 0, "stored": 0, "failed": 0}
-
-    # 2. Chunk
-    chunker = LegalChunker(
-        document_id=doc_id,
-        document_type=document_type,
-        document_title=title,
-        jurisdiction=jurisdiction,
-    )
-    chunks = chunker.chunk(elements)
-
+    chunks = _parse_and_chunk(pdf_path, doc_id, document_type, title, jurisdiction)
     if not chunks:
-        logger.warning(f"[{doc_id}] Chunker zwrócił 0 chunków — pomijam")
         return {"total": 0, "stored": 0, "failed": 0}
 
-    # 3. Embed + store
     async with ChunkEmbedder(batch_size=batch_size) as embedder:
         stats = await embedder.embed_and_store(chunks)
 
+    _echo_file_stats(doc_id, stats)
+    return stats
+
+
+async def _ingest_all_async(pdfs: list[Path], batch_size: int) -> dict:
+    """
+    Ingest wielu plików w JEDNEJ pętli zdarzeń i na JEDNYM połączeniu
+    do bazy oraz jednym kliencie embeddingów — zamiast otwierania ich
+    od nowa dla każdego pliku.
+    """
+    summary = {"files_ok": 0, "files_skipped": 0, "total": 0, "stored": 0, "failed": 0}
+
+    async with ChunkEmbedder(batch_size=batch_size) as embedder:
+        for pdf in pdfs:
+            stem = pdf.stem.upper()
+            if stem not in DOCUMENT_REGISTRY:
+                typer.echo(f"  SKIP  {pdf.name} — brak wpisu w DOCUMENT_REGISTRY")
+                summary["files_skipped"] += 1
+                continue
+
+            meta = DOCUMENT_REGISTRY[stem]
+            doc_id = stem.lower()
+            typer.echo(f"  →  {pdf.name}")
+
+            chunks = _parse_and_chunk(
+                pdf_path=pdf,
+                doc_id=doc_id,
+                document_type=meta["doc_type"],
+                title=meta["title"],
+            )
+            if not chunks:
+                summary["files_skipped"] += 1
+                continue
+
+            stats = await embedder.embed_and_store(chunks)
+            _echo_file_stats(doc_id, stats)
+
+            summary["files_ok"] += 1
+            for k in ("total", "stored", "failed"):
+                summary[k] += stats.get(k, 0)
+
+    return summary
+
+
+def _echo_file_stats(doc_id: str, stats: dict) -> None:
     typer.echo(
         f"    ✓ {doc_id}: "
         f"{stats['stored']}/{stats['total']} chunks zapisanych"
         + (f", {stats['failed']} błędów" if stats["failed"] else "")
     )
-    return stats
 
 
 if __name__ == "__main__":
