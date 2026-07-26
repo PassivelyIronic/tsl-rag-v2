@@ -180,17 +180,48 @@ Wnioski, wszystkie sprzeczne z założeniami architektury:
 3. Prawdopodobna przyczyna: `ms-marco-MiniLM-L-6-v2` to model **angielski**,
    stosowany do polskiego tekstu prawnego.
 
-Do rozstrzygnięcia (zmiana architektury, wymaga świadomej decyzji — zasada #5
-w `CLAUDE.md` zabrania usuwania elementów retrievalu „dla uproszczenia", ale
-tu jest zmierzona szkoda, nie uproszczenie):
+### Reranking: pięć wariantów zmierzonych, rekomendacja to wyłączenie
 
-- [ ] Zmierzyć wielojęzyczny cross-encoder (`BAAI/bge-reranker-v2-m3` albo
-      `bge-reranker-base`) w miejsce modelu angielskiego
-- [ ] Jeśli żaden reranker nie bije samej fuzji — rozważyć wyłączenie etapu
-      rerankingu i podniesienie `bm25_weight`, z jawnym uzasadnieniem w tabeli
-      §6.3 `CLAUDE.md`
-- [ ] Nie zmieniać wag na produkcji przed rozstrzygnięciem rerankera: przy
-      obecnym rerankerze wagi nie mają wpływu na wynik końcowy
+Pomiary na korpusie z embeddingami `multilingual-e5-base`, 48 pytań
+(`evals/results/retrieval_003`–`008`):
+
+| Wariant | recall@5 | recall@10 | MRR | `penalty` r@5 | mediana |
+|---|---|---|---|---|---|
+| **bez rerankingu** | 0.938 | 0.969 | 0.874 | 0.857 | **0.1 s** |
+| `ms-marco-MiniLM` (512, obecny) | 0.854 | 0.917 | 0.716 | 0.429 | 1.5 s |
+| `bge-reranker-base` (512) | 0.865 | 0.938 | 0.746 | 0.429 | 8.9 s |
+| `bge-reranker-v2-m3` (512) | 0.948 | 1.000 | 0.873 | 0.857 | 26.2 s |
+| `bge-reranker-v2-m3` (2048) | 0.969 | 1.000 | 0.878 | 1.000 | 43.4 s |
+
+Wnioski:
+
+1. **Obecny domyślny reranker jest najgorszym z możliwych wariantów.** Kosztuje
+   1.5 s i obniża recall@5 o 0.084 względem niewłączania go w ogóle.
+2. **Retrieval bez rerankingu trwa 0.1 s**, więc reranking to praktycznie
+   całość kosztu tego etapu.
+3. Zysk najlepszego wariantu to +0.031 recall@5 za 434-krotny wzrost latencji.
+   Przy generacji trwającej ~13 s daje to blisko minutę na pytanie — nie do
+   pogodzenia z celem podstawowym.
+4. Znaczenie mają **oba** czynniki: model (v2-m3 przy 512 daje 0.948 wobec
+   0.865 dla bge-base) i okno (0.948 → 0.969, `penalty` 0.857 → 1.000).
+   Okno tłumaczy się wprost rozmiarem chunków: taryfikatory mają średnio
+   516-585 tokenów, czyli powyżej limitu 512 — reranker ocenia obcięty
+   fragment, w którym wiersza z karą nie ma.
+
+**Rekomendacja: `RERANKER_ENABLED=false`.** Wymaga zgody właściciela repo
+(zasada #5 w `CLAUDE.md`) i wpisu do tabeli §6.3 jako świadome odstępstwo.
+
+- [ ] Decyzja o wyłączeniu rerankingu
+- [ ] Po wyłączeniu: przegląd wag RRF od nowa. Dotąd wagi nie miały wpływu na
+      wynik końcowy, bo reranker i tak przestawiał listę; bez niego kolejność
+      RRF staje się kolejnością finalną i wagi znów zaczynają mieć znaczenie
+- [ ] Wrócić do `v2-m3`, jeśli zmieni się budżet latencji (cache odpowiedzi
+      z Fazy 5, mocniejszy sprzęt) — to jest jakość dostępna od ręki za czas
+- [ ] Rozważyć podział dużych chunków tabelarycznych. Uwaga: taryfikatory mają
+      średnio 2458 znaków, więc przy `max_context_chars=12000` **pięć chunków
+      wypełnia cały budżet kontekstu**. Podział musi iść po grupach wierszy
+      z powtórzonym nagłówkiem — rozerwanie opisu naruszenia od kwoty to
+      gotowa halucynacja o wysokości grzywny
 - [x] **Format datasetu** — `questions.json` + walidacja przy wczytaniu i w testach,
       specyfikacja i prompt do generowania w `docs/GOLDEN_DATASET.md`
 - [x] **Golden dataset rozszerzony z 15 do 56 pytań** (2026-07-26), min. 6 na kategorię.
