@@ -6,7 +6,9 @@ oraz artykuł** — odpowiedź bez cytowania traktowana jest jako porażka, nie 
 
 > **Status: w budowie.** To reimplementacja (v2) wcześniejszego projektu, prowadzona pod jeden
 > konkretny cel: żeby system działał bez lokalnego GPU, za darmo i bez nadzoru autora.
-> Ten cel **nie jest jeszcze osiągnięty** — embeddingi nadal wymagają lokalnej Ollamy.
+> Cel **odcięcia od lokalnego GPU jest osiągnięty**: embeddingi liczą się w procesie
+> na CPU, a pełne zapytanie przechodzi przy zatrzymanej Ollamie (zweryfikowane pomiarem).
+> Zostaje odporność na awarie providera generacji i wdrożenie.
 > Plan dojścia i stan każdej fazy: [`PLAN.md`](PLAN.md).
 > Wszystkie liczby w tym dokumencie pochodzą z faktycznych uruchomień; nic nie jest szacowane.
 
@@ -33,7 +35,7 @@ pytanie
   ├→ embedding zapytania ──→ dense search (pgvector, cosine)  ─┐
   └→ tokenizacja PL ───────→ BM25 (rank-bm25, in-memory)      ─┴→ ważony RRF
                                                                     │
-                                                      cross-encoder rerank (CPU)
+                                            [cross-encoder rerank — WYŁĄCZONY]
                                                                     │
                                                         budowa kontekstu + prompt
                                                                     │
@@ -52,21 +54,21 @@ elementem układu, generacja może iść przez darmowy model w chmurze.
 
 | Warstwa | Technologia | Dlaczego ta |
 |---|---|---|
-| Embedding | `nomic-embed-text` (768d) przez Ollamę | Obecny stan; **to jest blocker** — patrz PLAN.md Faza 2 |
+| Embedding | `intfloat/multilingual-e5-base` (768d), lokalnie na CPU | Bez usługi zewnętrznej, bez klucza i bez limitów. Podniósł `recall@5` fuzji z 0.823 na 0.938 wobec `nomic-embed-text` |
 | Baza wektorowa | PostgreSQL 16 + pgvector, HNSW | Filtrowanie po metadanych w SQL obok wyszukiwania wektorowego |
-| Wyszukiwanie leksykalne | `rank-bm25` in-memory | 444 chunki mieszczą się w pamięci; brak osobnego serwisu |
-| Reranker | `ms-marco-MiniLM-L-6-v2` | Cross-encoder ~90 MB, działa na CPU |
+| Wyszukiwanie leksykalne | `rank-bm25` in-memory | 438 chunków mieści się w pamięci; brak osobnego serwisu |
+| Reranker | **wyłączony** | Zmierzony na pięciu wariantach: to on jest całością latencji retrievalu, a najlepszy kupuje +0.031 `recall@5` za 43 s |
 | Generacja | OpenRouter (`nvidia/nemotron-nano-9b-v2:free`) | Jedyny darmowy model zweryfikowany empirycznie w tym repo |
 | API | FastAPI | Osobny serwis — pod probe'y i skalowanie |
 | UI | Streamlit | Jeden ekran, jeden użytkownik. React byłby kolejnym serwisem do utrzymania |
-| Eval | własny harness + Gemini jako sędzia | Sędzia musi być modelem innym niż oceniany |
+| Eval | własny harness: keyword-match + ocena semantyczna na embeddingach | Obie darmowe i deterministyczne. LLM-as-a-judge opcjonalnie, gdy trzeba wykryć odpowiedź płynną i błędną |
 
 Uzasadnienie każdego odstępstwa od stacku kanonicznego: [`CLAUDE.md`](CLAUDE.md) §6.
 Analiza providerów i zaobserwowanych trybów awarii: [`docs/PROVIDERS.md`](docs/PROVIDERS.md).
 
 ## Korpus
 
-Stan z bazy, `SELECT * FROM corpus_stats` (2026-07-26): **444 chunki, 13 dokumentów**,
+Stan z bazy, `SELECT * FROM corpus_stats` (2026-07-26): **438 chunków, 13 dokumentów**,
 z czego 39 chunków tabelarycznych.
 
 | Dokument | Typ | Chunki | w tym tabele |
@@ -91,12 +93,17 @@ dokument pobrany dwa razy, nie brakujący akt prawny.
 
 ## Ewaluacja
 
-Golden dataset: **15 pytań w 6 kategoriach**. Harness mierzy nie tylko trafność odpowiedzi,
-ale też **na jakim etapie system się wywrócił**:
+Golden dataset: **56 pytań w 6 kategoriach**, min. 6 na kategorię, w trzech wariantach
+zapisu (`standard`, `bez_ogonkow`, `potoczne`). Każde pytanie ma sprawdzone maszynowo
+oparcie w korpusie — `evals/verify_dataset.py` weryfikuje, czy oczekiwane fakty faktycznie
+występują we wskazanym dokumencie.
+
+Harness mierzy nie tylko trafność odpowiedzi, ale też **na jakim etapie system się wywrócił**:
 
 | Metryka | Co mówi |
 |---|---|
-| `answer_score` | Czy odpowiedź zawiera oczekiwane fakty |
+| `answer_score` | Czy odpowiedź zawiera oczekiwane fakty **dosłownie** (keyword-match) |
+| `semantic_score` | To samo, ale **znaczeniowo** (embeddingi lokalnie). Liczby nadal sprawdzane dosłownie — „11 godzin" nie może przejść jako „9 godzin" |
 | `citation_hit_rate` | Recall cytowań — ile oczekiwanych dokumentów zacytowano |
 | `citation_precision` | Precyzja cytowań — ile z zacytowanych było oczekiwanych |
 | `retrieval_recall` | Czy retriever w ogóle podał właściwy dokument do kontekstu |
@@ -106,9 +113,43 @@ ale też **na jakim etapie system się wywrócił**:
 Rozdzielenie `retrieval_recall` od `citation_hit_rate` jest tu najważniejsze: samo zero
 w cytowaniach nie mówi, czy winny jest retriever, czy model.
 
-### Wyniki (3 przebiegi, 2026-07-26)
+### Retrieval — mierzony osobno, bez modelu językowego
 
-`nvidia/nemotron-nano-9b-v2:free` przez OpenRouter, embeddingi `nomic-embed-text`,
+`evals/run_retrieval_evals.py` mierzy sam retrieval: deterministycznie, w ~40 sekund,
+bez klucza API i bez limitów. Progi bramkujące w `evals/thresholds.yaml`, exit code 1
+poniżej progu.
+
+| Metryka | Wynik | Próg |
+|---|---|---|
+| `recall@5` | 0.938 | 0.917 |
+| `recall@10` | 0.969 | 0.948 |
+| `recall@20` | **1.000** | — |
+| MRR | 0.874 | 0.850 |
+| mediana latencji | **0.1 s** | — |
+
+Bramka stoi na retrievalu, nie na generacji, z powodu zmierzonego niżej rozrzutu.
+
+### Model referencyjny — sufit jakości
+
+`openai/gpt-4o-mini`, 56 pytań, koszt całego przebiegu **0.029 USD**
+(`evals/results/run_014`):
+
+| Metryka | Wynik |
+|---|---|
+| `answer_score` (keyword-match) | 0.653 |
+| **ocena semantyczna** | **0.776** |
+| `citation_precision` | 0.929 |
+| `retrieval_recall` | 0.946 |
+| latencja średnia | 1.8 s |
+
+Różnica 0.653 wobec 0.776 na tych samych odpowiedziach pokazuje, ile jakości ukrywała
+metryka dosłowna. Model dziesięciokrotnie większy od darmowego dawał podobny
+`answer_score` — wąskim gardłem nie był model, tylko sposób liczenia.
+
+### Wyniki generacji na darmowym modelu (3 przebiegi, dataset v1)
+
+`nvidia/nemotron-nano-9b-v2:free` przez OpenRouter, embeddingi `nomic-embed-text`
+(przed wymianą na e5),
 `top_k=20`, `rerank_top_n=5`, wagi RRF 0.5/0.5, ocena keyword-match.
 Pliki: `evals/results/run_010`–`run_012`.
 
@@ -136,8 +177,11 @@ Uruchomienie:
 # ocena keyword-match, bez żadnego klucza API
 uv run python -m evals.run_evals --output evals/results/run_XXX.json
 
-# ocena semantyczna (wymaga GEMINI_API_KEY)
-uv run python -m evals.run_evals --use-judge --output evals/results/run_XXX_judge.json
+# ewaluacja samego retrievalu — bez modelu jezykowego, bez kosztu, z bramka progowa
+uv run python -m evals.run_retrieval_evals
+
+# weryfikacja golden datasetu wzgledem korpusu
+uv run python -m evals.verify_dataset
 
 # porównanie modeli generacji na tym samym retrievalu
 uv run python -m evals.compare_models --models "<slug>" --resume
@@ -149,7 +193,7 @@ bezużyteczna po tygodniu.
 
 **Ograniczenia, świadomie nieukrywane:**
 
-- 15 pytań to za mało na bramkowanie CI — **zmierzone, nie przypuszczane** (rozrzut 0.133
+- Dataset v1 mial 15 pytan, co bylo za malo na bramkowanie CI — **zmierzone, nie przypuszczane** (rozrzut 0.133
   między identycznymi przebiegami). Kategorie `cross_document`, `penalty` i `scope` mają
   po **jednym** pytaniu, więc ich wynik to 0.0 albo 1.0. Rozszerzenie datasetu to Faza 1 planu.
 - Dwie z trzech porażek to porażki **retrievalu**, powtarzalne w każdym przebiegu:
@@ -166,7 +210,6 @@ Wymagania: Docker, Ollama, Python 3.11, [`uv`](https://docs.astral.sh/uv/).
 
 ```bash
 # 1. modele lokalne (embeddingi + model czatu do pracy offline)
-ollama pull nomic-embed-text
 ollama pull mistral:7b-instruct-q4_K_M
 
 # 2. zależności
@@ -256,7 +299,7 @@ zapytanie napisane bez ogonków też trafia — bo tak realnie pisze użytkownik
 wprowadza obciążenie samooceny. Sędzia zapisuje też uzasadnienie oceny, więc porażki dają
 się audytować.
 
-**PostgreSQL, choć przy 444 chunkach `numpy` byłby szybszy.** Świadoma decyzja: repo ma być
+**PostgreSQL, choć przy 438 chunkach `numpy` byłby szybszy.** Świadoma decyzja: repo ma być
 bazą pod osobny projekt Kubernetes, w którym baza w `StatefulSet` jest wymaganym elementem.
 Rozstrzygnięcie tego konfliktu opisane jest w `PLAN.md`.
 

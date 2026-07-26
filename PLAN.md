@@ -16,10 +16,37 @@ Repo ma być na niego gotowe, ale żadna decyzja w Fazach 0-5 nie może być pod
 
 ## Stan obecny (zweryfikowany 2026-07-26 na uruchomionych usługach)
 
+### Konfiguracja, którą zostawiono na koniec sesji
+
+| Element | Wartość | Skąd |
+|---|---|---|
+| Embeddingi | `intfloat/multilingual-e5-base`, **lokalnie na CPU** | Faza 2, wymiana z `nomic-embed-text` |
+| Prefiksy E5 | `query: ` / `passage: ` | wymagane przez rodzinę E5 |
+| Chat (repo) | `nvidia/nemotron-nano-9b-v2:free` | domyślne ustawienie zostaje darmowe |
+| Reranking | **wyłączony** (`RERANKER_ENABLED=false`) | pomiar: kosztuje całość latencji retrievalu |
+| Model rerankera w rezerwie | `BAAI/bge-reranker-v2-m3`, okno 2048 | najlepszy zmierzony wariant, gdyby wracać |
+| Wagi RRF | 0.5 / 0.5 | przegląd czterech wariantów, brak podstaw do zmiany |
+| Korpus | **438 chunków, 13 dokumentów**, zero miękkich łączników | po `normalize_pdf_text` |
+| Golden dataset | **56 pytań**, min. 6 na kategorię | 42 z NotebookLM + 14 z v1 |
+
 ### Zweryfikowane pomiarem
 
-**Korpus:** 444 chunki, 13 dokumentów, 39 chunków tabelarycznych, zero powtórzonych tekstów.
-Źródło: `SELECT * FROM corpus_stats`. Ingest przechodzi 13/14 plików, `failed: 0`, bez tracebacków.
+**Retrieval (deterministyczny, bez LLM-a)** — `evals/results/retrieval_009_norerank_bm25_0.5.json`:
+
+| Metryka | Wynik | Próg w `thresholds.yaml` |
+|---|---|---|
+| `recall@5` | 0.938 | 0.917 |
+| `recall@10` | 0.969 | 0.948 |
+| `recall@20` | **1.000** | — |
+| MRR | 0.874 | 0.850 |
+| mediana latencji | **0.1 s** | — |
+
+**Generacja** — `gpt-4o-mini` jako model referencyjny, 56 pytań, `run_014`:
+`answer_score` 0.653 keyword-match wobec **0.776 semantycznie**, `citation_precision` 0.929,
+`retrieval_recall` 0.946, latencja 1.8 s, koszt całego przebiegu 0.029 USD.
+
+**Korpus:** 438 chunków, 13 dokumentów, zero powtórzonych tekstów i zero miękkich łączników.
+Ingest przechodzi 13/14 plików, `failed: 0`, bez tracebacków.
 
 **Czternasty plik nie jest brakiem.** `TARIFF_EMPLOYER_2022.pdf` jest bajtowo identyczny
 z `TARIFF_COMPANY_2022.pdf` (md5 `bc6f6cb8…` dla obu). Poprzednia wersja tego planu zalecała
@@ -88,12 +115,41 @@ w dokumencie właściwym niż w konkurencyjnym. To problem korpusu i retrievalu,
 
 ### Nadal nie działa
 
-- **Embeddingi wymagają lokalnej Ollamy** → główny blocker celu podstawowego
 - Brak łańcucha fallbacku providerów — jedno `429` kończy zapytanie komunikatem o błędzie
 - Brak jakiejkolwiek observability
-- Golden dataset ma 15 pytań; `cross_document`, `penalty`, `scope` po jednym
 - Brak testów integracyjnych (`tests/integration`, `tests/e2e` są puste)
-- Latencja 19 s bez streamingu ani informacji o postępie
+- Darmowy model generacji: 13-19 s i sporadycznie puste odpowiedzi (reasoning zjada budżet)
+- `--use-judge` niesprawny — klucz Gemini ma zerowy limit
+- Repo **nie ma remote'a** — 27 commitów leży lokalnie, `tsl-rag-v2` nieutworzone na GitHubie
+
+---
+
+## Następna sesja — od czego zacząć
+
+**Przed czymkolwiek:** `docker compose up -d`, Ollama tylko jeśli potrzebna generacja lokalna
+(embeddingi jej już nie wymagają). Sanity check bez kosztów i bez limitów:
+
+```powershell
+uv run python -m evals.run_retrieval_evals    # ~40 s, ma pokazać "Bramka spełniona"
+uv run pytest -m unit                          # 55 testów
+```
+
+Kolejność, w mojej ocenie:
+
+1. **Push na GitHub** — utworzyć publiczne `tsl-rag-v2`, dopiąć remote, wypchnąć historię.
+   Jedyna rzecz, która blokuje się na czynności po stronie właściciela repo.
+2. **Nowy baseline generacji na 56 pytaniach** — darmowy limit OpenRoutera resetuje się
+   o północy UTC, a `run_013` padł po 3 pytaniach. Ten przebieg jest potrzebny jako punkt
+   odniesienia dla Fazy 3 i da też pierwszy pełny wynik semantyczny (rekord zapisuje
+   teraz całe odpowiedzi, nie 200 znaków).
+3. **Sprawdzić `LLM_REASONING_EFFORT=none` na nemotronie** — parametr jest wdrożony, ale
+   niezweryfikowany na docelowym modelu. Powinien usunąć puste odpowiedzi i skrócić
+   latencję. Zmiana generacji, więc pomiar przed i po.
+4. **Faza 3: łańcuch fallbacku** z płatnym modelem jako pierwszym ogniwem (decyzja niżej).
+
+Do rozważenia bez pilności: recall liczony po artykułach zamiast po dokumentach
+(obecny zawyża — patrz błędne odmowy przy modelu referencyjnym), podział dużych chunków
+tabelarycznych, LLM-as-a-judge za ~0.03 USD za przebieg.
 
 ---
 
