@@ -21,6 +21,7 @@ import typer
 from loguru import logger
 
 from evals.golden_dataset.questions import GOLDEN_DATASET, GoldenQuestion
+from evals.matching import count_matches
 from tsl_rag.core.console import ensure_utf8_output
 from tsl_rag.core.models import RetrievalRequest
 from tsl_rag.core.settings import get_settings
@@ -67,7 +68,6 @@ async def evaluate_question(
     response = await generator.generate(question.question, results)
     latency_ms = int((time.monotonic() - t0) * 1000)
 
-    answer_lower = response.answer.lower()
     is_out_of_scope = question.category == "out_of_scope"
     is_refused = _is_refusal(response.answer) or not response.has_answer
 
@@ -89,9 +89,12 @@ async def evaluate_question(
         logger.debug(f"  Judge: {answer_score:.1f} — {judge_reasoning}")
 
     else:
-        # Fallback: keyword match na fragmentach z expected_answer
+        # Fallback: keyword match na fragmentach z expected_answer.
+        # Dopasowanie przez evals.matching, nie zwykłe "in" — fakty liczbowe
+        # wymagają granicy cyfry, inaczej oczekiwane "200" potwierdza się
+        # przez "2000" w odpowiedzi (kwoty w taryfikatorach: 50-12000).
         key_facts = question.key_facts
-        fact_hits = sum(1 for f in key_facts if f in answer_lower)
+        fact_hits = count_matches(key_facts, response.answer)
         answer_score = fact_hits / len(key_facts) if key_facts else 1.0
 
     cited_docs = {c.document_id for c in response.citations}

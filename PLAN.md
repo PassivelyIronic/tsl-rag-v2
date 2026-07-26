@@ -139,6 +139,14 @@ Zrobione:
 
 Zostaje:
 
+- [ ] **Usunąć miękkie łączniki z tekstu przy ingeście.** Ekstrakcja z PDF-a zostawia
+      U+00AD w miejscach podziału wiersza: **1258 wystąpień w 307 z 444 chunków (69%)**,
+      we wszystkich rozporządzeniach UE. Korpus zawiera więc `przynaj­ mniej`, `wyko­ rzystać`,
+      `tygodnio­ wego`. Skutki: tokenizer BM25 robi z jednego słowa dwa bezużyteczne tokeny
+      (`tygodnio` + `wego`), więc poprawne zapytanie nigdy nie trafia w te miejsca, a model
+      dostaje w kontekście tekst z rozerwanymi słowami. **To jest prawdopodobnie większa
+      dźwignia niż składanie diakrytyków** i dotyczy dokumentów najczęściej pytanych.
+      Wymaga ponownego ingestu i pomiaru przed/po — czyli narzędzia poniżej
 - [ ] **`evals/run_retrieval_evals.py`** — ewaluacja samego retrievalu, bez wywołania LLM:
       `recall@k` dla `k ∈ {5, 10, 20}`, `MRR`, metryki osobno **przed** i **po** rerankingu.
       **To jest teraz zadanie o najwyższym priorytecie w tej fazie** — pomiar wariancji pokazał,
@@ -147,17 +155,37 @@ Zostaje:
       czy reranker pomaga, czy szkodzi
 - [ ] **Ustalić progi bramkujące na metrykach retrievalu** i zapisać w `evals/thresholds.yaml`.
       Punkt odniesienia: `retrieval_recall = 0.867` powtarzalny w trzech przebiegach
-- [x] **Format datasetu gotowy na rozszerzenie** — `questions.json` + walidacja przy wczytaniu
-      i w testach, specyfikacja i prompt do generowania w `docs/GOLDEN_DATASET.md`
-- [ ] **Rozszerzyć golden dataset do 42 pytań, min. 5 na kategorię.** Przydział per plik
-      i prompt do NotebookLM: `docs/GOLDEN_DATASET.md` §6-7. Materiał generuje właściciel repo
-      nad korpusem PDF; scalenie i walidacja po stronie repo. **Wymaga ręcznego przejrzenia
-      `source_note`** — błąd w golden datasecie jest gorszy niż brak pytania, bo od tego momentu
-      mierzymy system względem nieprawdy. Test `test_each_category_has_at_least_five_questions`
-      jest oznaczony `xfail` i zdejmuje się go, gdy próg zostanie osiągnięty
-- [ ] Dołożyć warianty `bez_ogonkow` (6) i `potoczne` (4). Dataset v1 miał wszystkie pytania
-      z diakrytykami i w terminologii aktu, więc nie mierzył ani składania diakrytyków
-      w tokenizerze (commit 49b572c), ani zapytań bez słów z przepisu
+- [x] **Format datasetu** — `questions.json` + walidacja przy wczytaniu i w testach,
+      specyfikacja i prompt do generowania w `docs/GOLDEN_DATASET.md`
+- [x] **Golden dataset rozszerzony z 15 do 56 pytań** (2026-07-26), min. 6 na kategorię.
+      Materiał wygenerowany przez NotebookLM nad korpusem PDF, scalony i zweryfikowany.
+      Warianty: 46 `standard`, 6 `bez_ogonkow`, 4 `potoczne`
+- [x] **Weryfikacja datasetu względem korpusu** (`evals/verify_dataset.py`) — dla każdego
+      pytania sprawdzane, czy fragmenty `expected_answer` faktycznie występują w tekście
+      dokumentów z `expected_docs`. Stan: **48/48 pytań z oczekiwaną treścią ma oparcie
+      w korpusie**. Narzędzie wykryło trzy wadliwe pytania z datasetu v1, w których oczekiwany
+      fragment nie występował we wskazanym dokumencie — patrz niżej
+- [ ] Ocena `--use-judge` na rozszerzonym datasecie; keyword-match karze poprawne odpowiedzi
+      sformułowane inaczej
+- [ ] **Nowy baseline na 56 pytaniach.** Przebiegi `run_010`–`run_012` dotyczą datasetu v1
+      (15 pytań) i nie są porównywalne z przyszłymi. Uwaga na limit: 56 pytań = 56 wywołań,
+      a darmowy dzienny limit OpenRoutera to 50
+
+### Trzy pytania z datasetu v1 były wadliwe jako narzędzie pomiaru
+
+Weryfikacja wykazała, że dotyczyło to **dokładnie tych trzech kategorii, które raportowałem
+jako porażki systemu**. Oczekiwany fragment nie występował we wskazanym dokumencie, więc
+pytanie nie mogło dostać punktu niezależnie od jakości odpowiedzi:
+
+| Pytanie | Było | Problem | Jest |
+|---|---|---|---|
+| `penalty-kierowca-czas-jazdy` | `grzywna` | Taryfikator używa formy „Wysokość grzywny"; mianownik nie występuje | `50, 100` (zał. 1, lp. 5.1) |
+| `aetr-zakres-panstwa-trzecie` | `państwa trzecie` | **AETR nie używa tego pojęcia** — mówi o „umawiających się stronach". Fragment występował w innych aktach, więc model cytujący `ec_561_2006` **nie był w błędzie** | `umawiającej się strony, międzynarodowego przewozu drogowego` |
+| `cross-561-vs-200215-tygodniowe-limity` | `56 godzin prowadzenia, 48 godzin średni czas pracy` | Sformułowania nieobecne w żadnym akcie | `56 godzin, 48 godzin` |
+
+**Konsekwencja dla wcześniejszej diagnozy:** porażka kategorii `scope` była defektem datasetu,
+nie generacji. Zerowe `retrieval_recall` dla `penalty` i `cross_document` pozostaje w mocy,
+bo ta metryka porównuje zwrócone dokumenty z oczekiwanymi i nie zależy od `expected_answer`.
 - [ ] **Zdiagnozować `penalty` po stronie korpusu.** Hipoteza: taryfikator kierowcy (5 chunków)
       przegrywa z taryfikatorem przedsiębiorcy (15) i klasyfikacją naruszeń (24) na samej
       objętości. Do sprawdzenia: czy PDF kierowcy jest kompletny, czy nie jest skanem

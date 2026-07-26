@@ -1,0 +1,588 @@
+{
+  "problems": [],
+  "ok": [
+    {
+      "id": "ec-561-max-daily-drive-std",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 1",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec-561-max-daily-drive-bo",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 1",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec-561-max-daily-drive-pot",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 1",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec-561-two-weeks-drive-std",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 3",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec-561-multi-crew-break-std",
+      "category": "procedure",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 7",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "dir-2002-max-weekly-work-std",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "Art. 4 lit. a",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "dir-2002-max-weekly-work-bo",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "Art. 4 lit. a",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "dir-2002-60-hours-cond-std",
+      "category": "procedure",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "Art. 4 lit. a",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-165-tacho-inspection-std",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "source_note": "Art. 23 ust. 1",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-165-tacho-inspection-bo",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "source_note": "Art. 23 ust. 1",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-165-damaged-card-proc-std",
+      "category": "procedure",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "source_note": "Art. 35 ust. 2 lit. a",
+      "facts_total": 3,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-2020-extend-drive-home-std",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "561/2006 Art. 12 (akapity dodane przez 2020/1054) — skorygowane z eu_2020_1054, fakt jest w tekście skonsolidowanym 561/2006",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-2020-extend-drive-home-bo",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "561/2006 Art. 12 (akapity dodane przez 2020/1054) — skorygowane z eu_2020_1054, fakt jest w tekście skonsolidowanym 561/2006",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-1071-financial-capacity-std",
+      "category": "procedure",
+      "expected_docs": [
+        "eu_1071_2009"
+      ],
+      "source_note": "Art. 7 ust. 2a",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-1071-scope-2-5-tons-std",
+      "category": "scope",
+      "expected_docs": [
+        "eu_1071_2009"
+      ],
+      "source_note": "Art. 1 ust. 4 lit. aa",
+      "facts_total": 3,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-1072-cabotage-def-std",
+      "category": "scope",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "source_note": "Art. 2 pkt 6",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-1072-cabotage-def-bo",
+      "category": "scope",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "source_note": "Art. 2 pkt 6",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "dir-2020-bilateral-post-std",
+      "category": "scope",
+      "expected_docs": [
+        "directive_2020_1057"
+      ],
+      "source_note": "Art. 1 ust. 3",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "dir-2020-bilateral-post-bo",
+      "category": "scope",
+      "expected_docs": [
+        "directive_2020_1057"
+      ],
+      "source_note": "Art. 1 ust. 3",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "aetr-armed-forces-scope-std",
+      "category": "scope",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "Art. 2 ust. 2 lit. b pkt 5",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "aetr-armed-forces-scope-pot",
+      "category": "scope",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "Art. 2 ust. 2 lit. b pkt 5",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "aetr-min-age-7-5t-std",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "Art. 5 ust. 1 lit. a",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "pl-act-break-length-std",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "pl_driver_hours_act"
+      ],
+      "source_note": "Art. 13 ust. 1",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "pl-act-overtime-cond-std",
+      "category": "procedure",
+      "expected_docs": [
+        "pl_driver_hours_act"
+      ],
+      "source_note": "Art. 20 ust. 2",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-2016-false-card-pen-std",
+      "category": "penalty",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "source_note": "Załącznik I, grupa 2, nr 5",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "eu-2016-false-card-pen-pot",
+      "category": "penalty",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "source_note": "Załącznik I, grupa 2, nr 5",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "tariff-drv-no-license-extract-std",
+      "category": "penalty",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "source_note": "Załącznik nr 1, lp. 1.2",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "tariff-drv-no-license-extract-pot",
+      "category": "penalty",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "source_note": "Załącznik nr 1, lp. 1.2",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "tariff-comp-no-community-lic-std",
+      "category": "penalty",
+      "expected_docs": [
+        "tariff_company_2022"
+      ],
+      "source_note": "Załącznik nr 3, lp. 1.1a",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "tariff-man-no-qual-std",
+      "category": "penalty",
+      "expected_docs": [
+        "tariff_manager_2022"
+      ],
+      "source_note": "Załącznik nr 4, lp. 4.1",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "cross-ec-561-dir-2002-std",
+      "category": "cross_document",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "source_note": "561/2006 Art. 6.2; 2002/15 Art. 4a",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "cross-ec-561-eu-2020-1054-std",
+      "category": "cross_document",
+      "expected_docs": [
+        "ec_561_2006",
+        "eu_2020_1054"
+      ],
+      "source_note": "561/2006 Art. 8.8 (zmieniony przez 2020/1054)",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "cross-ec-561-aetr-std",
+      "category": "cross_document",
+      "expected_docs": [
+        "ec_561_2006",
+        "aetr"
+      ],
+      "source_note": "561/2006 Art. 2 ust. 3",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "cross-eu-165-eu-2020-1054-std",
+      "category": "cross_document",
+      "expected_docs": [
+        "eu_165_2014",
+        "eu_2020_1054"
+      ],
+      "source_note": "165/2014 Art. 34.6 (zmieniony przez 2020/1054)",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "cross-eu-2016-403-tariff-comp-std",
+      "category": "cross_document",
+      "expected_docs": [
+        "eu_2016_403",
+        "tariff_company_2022"
+      ],
+      "source_note": "Taryfikator zał. 3 lp. 6.1.3; 2016/403 Zał I grupa 2 lp. 9",
+      "facts_total": 3,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "cross-eu-1071-eu-2016-403-std",
+      "category": "cross_document",
+      "expected_docs": [
+        "eu_1071_2009",
+        "eu_2016_403"
+      ],
+      "source_note": "1071/2009 Art. 6.2; 2016/403 preambuła i art. 1",
+      "facts_total": 4,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec561-czas-jazdy-tygodniowy",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec561-czas-jazdy-dwa-tygodnie",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec561-przerwa-po-4h30",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec561-odpoczynek-dzienny",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec561-odpoczynek-dzielony",
+      "category": "procedure",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec561-odpoczynek-tygodniowy-regularny",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "ec561-odpoczynek-skrocony-ile-tygodni",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "dir200215-czas-pracy-sredni",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "dir200215-czas-pracy-przedluzony",
+      "category": "numeric_fact",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "",
+      "facts_total": 1,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "cross-561-vs-200215-tygodniowe-limity",
+      "category": "cross_document",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "source_note": "561/2006 Art. 6 ust. 2; 2002/15 Art. 4. Poprzednio '56 godzin prowadzenia' i '48 godzin średni czas pracy' — sformulowania nieobecne w zadnym akcie.",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "aetr-zakres-panstwa-trzecie",
+      "category": "scope",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "AETR Art. 2 ust. 1. Poprzednio oczekiwano 'państwa trzecie' — AETR nie uzywa tego pojecia, mowi o 'umawiajacych sie stronach'. Fragment wystepowal w innych aktach, wiec model cytujacy je nie byl w bledzie, a pytanie bylo zle skonstruowane.",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    },
+    {
+      "id": "penalty-kierowca-czas-jazdy",
+      "category": "penalty",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "source_note": "Zalacznik nr 1, lp. 5.1 — do 1 godziny: 50 zl, za kazda nastepna: 100 zl. Poprzednio oczekiwano fragmentu 'grzywna', ktory w taryfikatorze nie wystepuje (naglowek uzywa formy 'Wysokosc grzywny'), wiec pytanie nie moglo dostac punktu.",
+      "facts_total": 2,
+      "facts_missing": [],
+      "found_in_other_docs": {},
+      "unknown_docs": []
+    }
+  ]
+}

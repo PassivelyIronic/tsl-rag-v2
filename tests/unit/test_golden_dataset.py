@@ -108,15 +108,26 @@ def test_key_facts_splits_on_commas():
     assert q.key_facts == ["9 godzin", "10 godzin", "dwa razy w tygodniu"]
 
 
-@pytest.mark.xfail(
-    reason="Dataset ma 15 pytań; docelowo min. 5 na kategorię (PLAN.md Faza 1). "
-    "Ten test jest bramką dla rozszerzenia datasetu — po dołożeniu pytań "
-    "zdejmij xfail.",
-    strict=False,
-)
 def test_each_category_has_at_least_five_questions():
+    """
+    Próg z PLAN.md Faza 1. Do rozszerzenia datasetu (2026-07-26) trzy kategorie
+    miały po jednym pytaniu, więc ich wynik mógł być tylko 0.0 albo 1.0 —
+    statystycznie bezużyteczny. Test pilnuje, żeby nie wrócić do tego stanu
+    przez usunięcie pytań.
+    """
     counts: dict[str, int] = {}
     for q in GOLDEN_DATASET:
         counts[q.category] = counts.get(q.category, 0) + 1
     thin = {c: counts.get(c, 0) for c in CATEGORIES if counts.get(c, 0) < 5}
     assert not thin, f"kategorie z mniej niż 5 pytaniami: {thin}"
+
+
+def test_dataset_has_diacritic_free_and_colloquial_variants():
+    """
+    Dataset v1 miał wszystkie pytania w poprawnej polszczyźnie i w terminologii
+    aktów prawnych, więc nie mierzył ani składania diakrytyków w tokenizerze,
+    ani zapytań sformułowanych bez słów z przepisu.
+    """
+    variants = {q.variant for q in GOLDEN_DATASET}
+    assert "bez_ogonkow" in variants
+    assert "potoczne" in variants

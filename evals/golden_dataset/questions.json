@@ -3,12 +3,460 @@
   "_format": "Opis formatu i instrukcja generowania: docs/GOLDEN_DATASET.md",
   "questions": [
     {
-      "id": "ec561-czas-jazdy-dzienny",
+      "id": "ec-561-max-daily-drive-std",
+      "question": "Jaki jest maksymalny dzienny czas prowadzenia pojazdu?",
       "category": "numeric_fact",
       "variant": "standard",
-      "question": "Jaki jest maksymalny dzienny czas prowadzenia pojazdu?",
-      "expected_answer": "9 godzin, 10 godzin, dwa razy w tygodniu",
-      "expected_docs": ["ec_561_2006"]
+      "expected_answer": "nie może przekroczyć 9 godzin, nie więcej niż 10 godzin",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 1"
+    },
+    {
+      "id": "ec-561-max-daily-drive-bo",
+      "question": "Jaki jest maks dzienny czas jazdy",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_answer": "nie może przekroczyć 9 godzin, nie więcej niż 10 godzin",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 1"
+    },
+    {
+      "id": "ec-561-max-daily-drive-pot",
+      "question": "Ile najdłużej mogę jechać w jeden dzień za kółkiem?",
+      "category": "numeric_fact",
+      "variant": "potoczne",
+      "expected_answer": "nie może przekroczyć 9 godzin, nie więcej niż 10 godzin",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 1"
+    },
+    {
+      "id": "ec-561-two-weeks-drive-std",
+      "question": "Jaki jest dopuszczalny łączny czas prowadzenia pojazdu w ciągu dwóch kolejnych tygodni?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_answer": "nie może przekroczyć 90 godzin",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 6 ust. 3"
+    },
+    {
+      "id": "ec-561-multi-crew-break-std",
+      "question": "Pod jakimi warunkami kierowca w załodze kilkuosobowej może odebrać przerwę w jadącym pojeździe?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_answer": "nie jest zaangażowany w pomoc, wykorzystać przerwę trwającą 45 minut",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "Art. 7"
+    },
+    {
+      "id": "dir-2002-max-weekly-work-std",
+      "question": "Jaki jest maksymalny tygodniowy czas pracy określony w dyrektywie?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_answer": "nie może przekraczać 48 godzin, przedłużony do 60 godzin",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "Art. 4 lit. a"
+    },
+    {
+      "id": "dir-2002-max-weekly-work-bo",
+      "question": "Jaki jest maksymalny tygodniowy czas pracy kierowcy",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_answer": "nie może przekraczać 48 godzin, przedłużony do 60 godzin",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "Art. 4 lit. a"
+    },
+    {
+      "id": "dir-2002-60-hours-cond-std",
+      "question": "Pod jakimi warunkami tygodniowy czas pracy pracownika może zostać wydłużony do 60 godzin?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_answer": "w ciągu czterech miesięcy, nie została przekroczona średnia 48 godzin",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": "Art. 4 lit. a"
+    },
+    {
+      "id": "eu-165-tacho-inspection-std",
+      "question": "Jak często tachografy muszą być poddawane regularnym przeglądom w zatwierdzonych warsztatach?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_answer": "przynajmniej raz na dwa lata",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "source_note": "Art. 23 ust. 1"
+    },
+    {
+      "id": "eu-165-tacho-inspection-bo",
+      "question": "Jak czesto trzeba robic przeglad tachografu w warsztacie",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_answer": "przynajmniej raz na dwa lata",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "source_note": "Art. 23 ust. 1"
+    },
+    {
+      "id": "eu-165-damaged-card-proc-std",
+      "question": "Co musi zrobić kierowca na początku trasy w przypadku uszkodzenia karty kierowcy?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_answer": "drukuje dane, identyfikację kierowcy, wraz z podpisem",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "source_note": "Art. 35 ust. 2 lit. a"
+    },
+    {
+      "id": "eu-2020-extend-drive-home-std",
+      "question": "O ile czasu kierowca może wyjątkowo przekroczyć czas prowadzenia pojazdu, aby dotrzeć do bazy na regularny tygodniowy odpoczynek i pod jakim warunkiem?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_answer": "maksymalnie dwie godziny, przerwę trwającą nieprzerwanie 30 minut",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "561/2006 Art. 12 (akapity dodane przez 2020/1054) — skorygowane z eu_2020_1054, fakt jest w tekście skonsolidowanym 561/2006"
+    },
+    {
+      "id": "eu-2020-extend-drive-home-bo",
+      "question": "O ile mozna wydluzyc czas jazdy zeby dojechac do bazy na regularna pauze tygodniowa",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_answer": "maksymalnie dwie godziny, przerwę trwającą nieprzerwanie 30 minut",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": "561/2006 Art. 12 (akapity dodane przez 2020/1054) — skorygowane z eu_2020_1054, fakt jest w tekście skonsolidowanym 561/2006"
+    },
+    {
+      "id": "eu-1071-financial-capacity-std",
+      "question": "Jak przedsiębiorca może wykazać zdolność finansową, gdy nie posiada poświadczonego rocznego sprawozdania finansowego w roku rejestracji?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_answer": "za pomocą poświadczenia, takiego jak gwarancja bankowa",
+      "expected_docs": [
+        "eu_1071_2009"
+      ],
+      "source_note": "Art. 7 ust. 2a"
+    },
+    {
+      "id": "eu-1071-scope-2-5-tons-std",
+      "question": "Czy przepisy rozporządzenia 1071/2009 mają zastosowanie do firm wykonujących przewozy rzeczy pojazdami o masie całkowitej do 2,5 tony?",
+      "category": "scope",
+      "variant": "standard",
+      "expected_answer": "nie ma zastosowania do, nie przekracza 2,5 tony",
+      "expected_docs": [
+        "eu_1071_2009"
+      ],
+      "source_note": "Art. 1 ust. 4 lit. aa"
+    },
+    {
+      "id": "eu-1072-cabotage-def-std",
+      "question": "Jak brzmi definicja przewozu kabotażowego w rozporządzeniu o dostępie do rynku przewozów?",
+      "category": "scope",
+      "variant": "standard",
+      "expected_answer": "krajowy zarobkowy przewóz, wykonywany tymczasowo w przyjmującym państwie członkowskim",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "source_note": "Art. 2 pkt 6"
+    },
+    {
+      "id": "eu-1072-cabotage-def-bo",
+      "question": "Co to jest przewoz kabotazowy",
+      "category": "scope",
+      "variant": "bez_ogonkow",
+      "expected_answer": "krajowy zarobkowy przewóz, wykonywany tymczasowo w przyjmującym państwie członkowskim",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "source_note": "Art. 2 pkt 6"
+    },
+    {
+      "id": "dir-2020-bilateral-post-std",
+      "question": "Czy kierowca, który wykonuje przewóz dwustronny rzeczy z państwa członkowskiego siedziby, jest uznawany za pracownika delegowanego?",
+      "category": "scope",
+      "variant": "standard",
+      "expected_answer": "nie uznaje się za pracownika delegowanego",
+      "expected_docs": [
+        "directive_2020_1057"
+      ],
+      "source_note": "Art. 1 ust. 3"
+    },
+    {
+      "id": "dir-2020-bilateral-post-bo",
+      "question": "Czy kierowca robiacy przewoz dwustronny rzeczy jest pracownikiem delegowanym",
+      "category": "scope",
+      "variant": "bez_ogonkow",
+      "expected_answer": "nie uznaje się za pracownika delegowanego",
+      "expected_docs": [
+        "directive_2020_1057"
+      ],
+      "source_note": "Art. 1 ust. 3"
+    },
+    {
+      "id": "aetr-armed-forces-scope-std",
+      "question": "Czy umowę AETR stosuje się do międzynarodowych przewozów drogowych wykonywanych przez pojazdy sił zbrojnych?",
+      "category": "scope",
+      "variant": "standard",
+      "expected_answer": "nie ma zastosowania, podlegające kontroli sił zbrojnych",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "Art. 2 ust. 2 lit. b pkt 5"
+    },
+    {
+      "id": "aetr-armed-forces-scope-pot",
+      "question": "Czy do wojska stosuje się umowę AETR?",
+      "category": "scope",
+      "variant": "potoczne",
+      "expected_answer": "nie ma zastosowania, podlegające kontroli sił zbrojnych",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "Art. 2 ust. 2 lit. b pkt 5"
+    },
+    {
+      "id": "aetr-min-age-7-5t-std",
+      "question": "Jaki jest minimalny wiek kierowcy pojazdu towarowego o dopuszczalnej masie całkowitej równej 7,5 tony w umowie AETR?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_answer": "ukończonych 18 lat",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "Art. 5 ust. 1 lit. a"
+    },
+    {
+      "id": "pl-act-break-length-std",
+      "question": "Jaką minimalną długość musi mieć przerwa po sześciu godzinach pracy, jeśli czas pracy kierowcy przekracza 9 godzin w danej dobie?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_answer": "nie krótszym niż 45 minut",
+      "expected_docs": [
+        "pl_driver_hours_act"
+      ],
+      "source_note": "Art. 13 ust. 1"
+    },
+    {
+      "id": "pl-act-overtime-cond-std",
+      "question": "W jakich sytuacjach ustawa dopuszcza pracę w godzinach nadliczbowych kierowcy?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_answer": "dla ochrony życia lub zdrowia ludzkiego, szczególnych potrzeb pracodawcy",
+      "expected_docs": [
+        "pl_driver_hours_act"
+      ],
+      "source_note": "Art. 20 ust. 2"
+    },
+    {
+      "id": "eu-2016-false-card-pen-std",
+      "question": "Jak kwalifikowane jest posługiwanie się przez kierowcę kartą kierowcy, która nie jest jego własną kartą?",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_answer": "najpoważniejsze naruszenia, nn",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "source_note": "Załącznik I, grupa 2, nr 5"
+    },
+    {
+      "id": "eu-2016-false-card-pen-pot",
+      "question": "Co mi wpiszą w papiery jak mnie złapią na jeździe na nie swojej karcie?",
+      "category": "penalty",
+      "variant": "potoczne",
+      "expected_answer": "najpoważniejsze naruszenia, nn",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "source_note": "Załącznik I, grupa 2, nr 5"
+    },
+    {
+      "id": "tariff-drv-no-license-extract-std",
+      "question": "Jaka jest wysokość grzywny nakładanej na kierowcę za nieokazanie podczas kontroli wypisu z licencji?",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_answer": "200",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "source_note": "Załącznik nr 1, lp. 1.2"
+    },
+    {
+      "id": "tariff-drv-no-license-extract-pot",
+      "question": "Ile zapłacę z własnej kieszeni jak podczas kontroli nie mam wypisu z licencji?",
+      "category": "penalty",
+      "variant": "potoczne",
+      "expected_answer": "200",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "source_note": "Załącznik nr 1, lp. 1.2"
+    },
+    {
+      "id": "tariff-comp-no-community-lic-std",
+      "question": "Jaka kara pieniężna nakładana jest na przewoźnika za wykonywanie transportu drogowego bez wymaganej licencji wspólnotowej?",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_answer": "12 000",
+      "expected_docs": [
+        "tariff_company_2022"
+      ],
+      "source_note": "Załącznik nr 3, lp. 1.1a"
+    },
+    {
+      "id": "tariff-man-no-qual-std",
+      "question": "Jaka kara finansowa grozi osobie zarządzającej transportem, jeśli kierowca nie uzyskał kwalifikacji wstępnej?",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_answer": "1500",
+      "expected_docs": [
+        "tariff_manager_2022"
+      ],
+      "source_note": "Załącznik nr 4, lp. 4.1"
+    },
+    {
+      "id": "cross-ec-561-dir-2002-std",
+      "question": "Jak maksymalny tygodniowy czas prowadzenia pojazdu ma się do maksymalnego tygodniowego czasu pracy kierowcy w UE?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_answer": "nie może przekroczyć 56 godzin, maksymalnego tygodniowego czasu pracy",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "source_note": "561/2006 Art. 6.2; 2002/15 Art. 4a"
+    },
+    {
+      "id": "cross-ec-561-eu-2020-1054-std",
+      "question": "Gdzie kierowca musi spędzać regularny tygodniowy okres odpoczynku po zmianach wprowadzonych przez Pakiet Mobilności?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_answer": "nie mogą być wykorzystywane w pojeździe, w odpowiednim dla każdej płci miejscu zakwaterowania",
+      "expected_docs": [
+        "ec_561_2006",
+        "eu_2020_1054"
+      ],
+      "source_note": "561/2006 Art. 8.8 (zmieniony przez 2020/1054)"
+    },
+    {
+      "id": "cross-ec-561-aetr-std",
+      "question": "Które przepisy należy stosować do przejazdu rozpoczynającego się w Unii Europejskiej a kończącego w państwie będącym stroną umowy AETR?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_answer": "aetr stosuje się, w miejsce niniejszego rozporządzenia",
+      "expected_docs": [
+        "ec_561_2006",
+        "aetr"
+      ],
+      "source_note": "561/2006 Art. 2 ust. 3"
+    },
+    {
+      "id": "cross-eu-165-eu-2020-1054-std",
+      "question": "W jaki sposób kierowca pojazdu z tachografem analogowym musi rejestrować przekroczenie granicy państwa członkowskiego po zmianach?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_answer": "na początku pierwszego postoju, na granicy lub po jej przekroczeniu",
+      "expected_docs": [
+        "eu_165_2014",
+        "eu_2020_1054"
+      ],
+      "source_note": "165/2014 Art. 34.6 (zmieniony przez 2020/1054)"
+    },
+    {
+      "id": "cross-eu-2016-403-tariff-comp-std",
+      "question": "Jaka kara w złotych grozi pracodawcy za używanie urządzenia przerabiającego dane z tachografu i jak to wpływa na reputację?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_answer": "10 000, nn, najpoważniejsze naruszenia",
+      "expected_docs": [
+        "eu_2016_403",
+        "tariff_company_2022"
+      ],
+      "source_note": "Taryfikator zał. 3 lp. 6.1.3; 2016/403 Zał I grupa 2 lp. 9"
+    },
+    {
+      "id": "cross-eu-1071-eu-2016-403-std",
+      "question": "Czy wystąpienie najpoważniejszego naruszenia (NN) automatycznie i bezwarunkowo pozbawia przewoźnika dobrej reputacji?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_answer": "właściwy organ ocenia, czy, utrata dobrej reputacji, nieproporcjonalny środek",
+      "expected_docs": [
+        "eu_1071_2009",
+        "eu_2016_403"
+      ],
+      "source_note": "1071/2009 Art. 6.2; 2016/403 preambuła i art. 1"
+    },
+    {
+      "id": "out-of-scope-speed-ticket-std",
+      "question": "Jaka jest wysokość mandatu za przekroczenie prędkości o 30 km/h na autostradzie w Niemczech w 2023 roku?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_answer": "",
+      "expected_docs": [],
+      "source_note": ""
+    },
+    {
+      "id": "out-of-scope-minimum-wage-std",
+      "question": "Ile wynosi aktualna płaca minimalna dla kierowcy zawodowego delegowanego do Francji?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_answer": "",
+      "expected_docs": [],
+      "source_note": ""
+    },
+    {
+      "id": "out-of-scope-customs-std",
+      "question": "Jakie procedury celne i deklaracje są wymagane podczas przewozu towarów pomiędzy Polską a Wielką Brytanią po Brexicie?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_answer": "",
+      "expected_docs": [],
+      "source_note": ""
+    },
+    {
+      "id": "out-of-scope-adr-training-std",
+      "question": "Gdzie w Polsce można zapisać się na specjalistyczny kurs na przewóz materiałów wybuchowych klasy 1 (ADR) i ile to kosztuje?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_answer": "",
+      "expected_docs": [],
+      "source_note": ""
+    },
+    {
+      "id": "out-of-scope-vehicle-inspection-std",
+      "question": "Po jakim czasie od pierwszej rejestracji ciągnika siodłowego należy wykonać w Polsce pierwsze badanie techniczne?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_answer": "",
+      "expected_docs": [],
+      "source_note": ""
+    },
+    {
+      "id": "out-of-scope-driver-license-std",
+      "question": "Jakie badania medyczne i psychologiczne są potrzebne, żeby przedłużyć ważność prawa jazdy kategorii D?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_answer": "",
+      "expected_docs": [],
+      "source_note": ""
     },
     {
       "id": "ec561-czas-jazdy-tygodniowy",
@@ -16,7 +464,10 @@
       "variant": "standard",
       "question": "Jaki jest maksymalny tygodniowy czas prowadzenia pojazdu?",
       "expected_answer": "56 godzin",
-      "expected_docs": ["ec_561_2006"]
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": ""
     },
     {
       "id": "ec561-czas-jazdy-dwa-tygodnie",
@@ -24,7 +475,10 @@
       "variant": "standard",
       "question": "Ile godzin może wynieść łączny czas prowadzenia pojazdu w ciągu dwóch kolejnych tygodni?",
       "expected_answer": "90 godzin",
-      "expected_docs": ["ec_561_2006"]
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": ""
     },
     {
       "id": "ec561-przerwa-po-4h30",
@@ -32,7 +486,10 @@
       "variant": "standard",
       "question": "Jak długa przerwa przysługuje kierowcy po 4,5 godzinach jazdy?",
       "expected_answer": "45 minut",
-      "expected_docs": ["ec_561_2006"]
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": ""
     },
     {
       "id": "ec561-odpoczynek-dzienny",
@@ -40,7 +497,10 @@
       "variant": "standard",
       "question": "Jaki jest minimalny dzienny czas odpoczynku kierowcy?",
       "expected_answer": "11 godzin",
-      "expected_docs": ["ec_561_2006"]
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": ""
     },
     {
       "id": "ec561-odpoczynek-dzielony",
@@ -48,7 +508,10 @@
       "variant": "standard",
       "question": "Czy dzienny okres odpoczynku może być podzielony i na jakie części?",
       "expected_answer": "3 godziny, 9 godzin",
-      "expected_docs": ["ec_561_2006"]
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": ""
     },
     {
       "id": "ec561-odpoczynek-tygodniowy-regularny",
@@ -56,7 +519,10 @@
       "variant": "standard",
       "question": "Jaki jest regularny tygodniowy okres odpoczynku?",
       "expected_answer": "45 godzin",
-      "expected_docs": ["ec_561_2006"]
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": ""
     },
     {
       "id": "ec561-odpoczynek-skrocony-ile-tygodni",
@@ -64,7 +530,10 @@
       "variant": "standard",
       "question": "Ile kolejnych tygodni kierowca może korzystać ze skróconego odpoczynku tygodniowego?",
       "expected_answer": "dwa",
-      "expected_docs": ["ec_561_2006"]
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "source_note": ""
     },
     {
       "id": "dir200215-czas-pracy-sredni",
@@ -72,7 +541,10 @@
       "variant": "standard",
       "question": "Jaki jest maksymalny średni tygodniowy czas pracy zgodnie z dyrektywą 2002/15?",
       "expected_answer": "48 godzin",
-      "expected_docs": ["directive_2002_15"]
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": ""
     },
     {
       "id": "dir200215-czas-pracy-przedluzony",
@@ -80,31 +552,44 @@
       "variant": "standard",
       "question": "Do ilu godzin może być przedłużony tygodniowy czas pracy na mocy dyrektywy 2002/15?",
       "expected_answer": "60 godzin",
-      "expected_docs": ["directive_2002_15"]
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "source_note": ""
     },
     {
       "id": "cross-561-vs-200215-tygodniowe-limity",
       "category": "cross_document",
       "variant": "standard",
       "question": "Jak rozporządzenie EC 561/2006 i dyrektywa 2002/15 regulują tygodniowy czas prowadzenia pojazdu i pracy?",
-      "expected_answer": "56 godzin prowadzenia, 48 godzin średni czas pracy",
-      "expected_docs": ["ec_561_2006", "directive_2002_15"]
+      "expected_answer": "56 godzin, 48 godzin",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "source_note": "561/2006 Art. 6 ust. 2; 2002/15 Art. 4. Poprzednio '56 godzin prowadzenia' i '48 godzin średni czas pracy' — sformulowania nieobecne w zadnym akcie."
     },
     {
       "id": "aetr-zakres-panstwa-trzecie",
       "category": "scope",
       "variant": "standard",
       "question": "Czy umowa AETR ma zastosowanie do kierowców poza Unią Europejską?",
-      "expected_answer": "państwa trzecie",
-      "expected_docs": ["aetr"]
+      "expected_answer": "umawiającej się strony, międzynarodowego przewozu drogowego",
+      "expected_docs": [
+        "aetr"
+      ],
+      "source_note": "AETR Art. 2 ust. 1. Poprzednio oczekiwano 'państwa trzecie' — AETR nie uzywa tego pojecia, mowi o 'umawiajacych sie stronach'. Fragment wystepowal w innych aktach, wiec model cytujacy je nie byl w bledzie, a pytanie bylo zle skonstruowane."
     },
     {
       "id": "penalty-kierowca-czas-jazdy",
       "category": "penalty",
       "variant": "standard",
       "question": "Jakie kary grożą za przekroczenie dziennego czasu prowadzenia pojazdu?",
-      "expected_answer": "grzywna",
-      "expected_docs": ["tariff_driver_2022"]
+      "expected_answer": "50, 100",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "source_note": "Zalacznik nr 1, lp. 5.1 — do 1 godziny: 50 zl, za kazda nastepna: 100 zl. Poprzednio oczekiwano fragmentu 'grzywna', ktory w taryfikatorze nie wystepuje (naglowek uzywa formy 'Wysokosc grzywny'), wiec pytanie nie moglo dostac punktu."
     },
     {
       "id": "oos-ograniczenie-predkosci",
@@ -112,7 +597,8 @@
       "variant": "standard",
       "question": "Jakie jest ograniczenie prędkości na polskich autostradach?",
       "expected_answer": "",
-      "expected_docs": []
+      "expected_docs": [],
+      "source_note": ""
     },
     {
       "id": "oos-minimalne-wynagrodzenie-de",
@@ -120,7 +606,8 @@
       "variant": "standard",
       "question": "Jakie jest minimalne wynagrodzenie kierowcy ciężarówki w Niemczech?",
       "expected_answer": "",
-      "expected_docs": []
+      "expected_docs": [],
+      "source_note": ""
     }
   ]
 }

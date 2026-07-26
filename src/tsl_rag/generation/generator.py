@@ -158,6 +158,20 @@ _ARTICLE_RE = re.compile(r"(?:artykuł|artykul|art\.?)\s*([\w().\-–/]+)", re.I
 _PARAGRAPH_RE = re.compile(r"(?:ust\.?|§|par\.?)\s*([\w().\-–/]+)", re.IGNORECASE)
 
 
+def _article_number(value: str | None) -> str | None:
+    """
+    "Artykuł 6" → "6", "Art. 8a" → "8a", "6(1)" → "6(1)".
+
+    Metadane chunków trzymają pełny nagłówek z dokumentu, a cytowanie
+    w odpowiedzi zawiera zwykle sam numer. Bez sprowadzenia obu do wspólnej
+    postaci dopasowanie chunka po artykule nigdy nie trafiało.
+    """
+    if not value:
+        return None
+    match = re.search(r"([\w()./\-–]+)\s*$", value.strip())
+    return match.group(1).lower() if match else None
+
+
 def _extract_citations(
     answer: str,
     used_results: list[RetrievalResult],
@@ -201,8 +215,14 @@ def _extract_citations(
         paragraph = paragraph_match.group(1) if paragraph_match else None
 
         # Chunk potwierdzający: ten z pasującym artykułem, jeśli jest.
+        # Porównanie po samym numerze, bo metadane trzymają pełny nagłówek
+        # ("Artykuł 6"), a z odpowiedzi wyciągamy sam numer ("6").
         chunk = next(
-            (c.chunk for c in candidates if article and c.chunk.metadata.article == article),
+            (
+                c.chunk
+                for c in candidates
+                if article and _article_number(c.chunk.metadata.article) == _article_number(article)
+            ),
             candidates[0].chunk,
         )
 
