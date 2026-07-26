@@ -21,6 +21,7 @@ import typer
 from loguru import logger
 
 from evals.golden_dataset.questions import GOLDEN_DATASET, GoldenQuestion
+from tsl_rag.core.console import ensure_utf8_output
 from tsl_rag.core.models import RetrievalRequest
 from tsl_rag.core.settings import get_settings
 from tsl_rag.generation.generator import RAGGenerator
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     # --use-judge), żeby przebieg bez sędziego nie wymagał google-genai
     # ani klucza Gemini — istotne dla joba wsadowego w CI.
     from evals.judge import GeminiJudge
+
+ensure_utf8_output()
 
 app = typer.Typer(add_completion=False)
 

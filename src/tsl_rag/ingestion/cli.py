@@ -19,11 +19,14 @@ from pathlib import Path
 import typer
 from loguru import logger
 
+from tsl_rag.core.console import ensure_utf8_output
 from tsl_rag.core.models import DocumentType
 from tsl_rag.core.settings import get_settings
 from tsl_rag.ingestion.chunkers.legal_chunker import LegalChunker
 from tsl_rag.ingestion.embedders.embedder import ChunkEmbedder
 from tsl_rag.ingestion.parsers.legal_pdf_parser import LegalPDFParser
+
+ensure_utf8_output()
 
 app = typer.Typer(
     name="tsl-ingest",
@@ -71,10 +74,27 @@ DOCUMENT_REGISTRY: dict[str, dict] = {
         "doc_type": DocumentType.PENALTY_TARIFF,
         "title": "Taryfikator dla zarządzającego (2022)",
     },
-    "TARIFF_EMPLOYER_2022": {
-        "doc_type": DocumentType.PENALTY_TARIFF,
-        "title": "Taryfikator dla pracodawcy (2022)",
-    },
+}
+
+# TARIFF_EMPLOYER_2022 celowo NIE MA wpisu w rejestrze.
+#
+# Plan przewidywał dodanie go jako czternastego dokumentu, w założeniu, że
+# jest cicho pomijany przez przeoczenie. Weryfikacja pokazała coś innego:
+# TARIFF_EMPLOYER_2022.pdf jest bajtowo identyczny z TARIFF_COMPANY_2022.pdf
+# (md5 bc6f6cb87eaa7f19e27a163522f0fdde dla obu). To ten sam plik pobrany
+# dwa razy pod inną nazwą, nie osobny akt prawny.
+#
+# Dodanie go do rejestru wstrzykuje 15 chunków o tekście identycznym
+# z tariff_company_2022. Dwa identyczne chunki konkurują wtedy w retrievalu,
+# zajmują dwa miejsca w kontekście zamiast jednego i wypychają z niego inne
+# dokumenty — co uderza wprost w kategorię "penalty" z golden dataset, gdzie
+# model już teraz cytuje tariff_company_2022 zamiast tariff_driver_2022.
+#
+# Zanim to wróci do rejestru, trzeba ustalić, czy taryfikator dla pracodawcy
+# istnieje jako odrębny dokument i pobrać go osobno. Do tego czasu pominięcie
+# jest zachowaniem poprawnym, a nie luką.
+_KNOWN_DUPLICATES = {
+    "TARIFF_EMPLOYER_2022": "identyczny bajtowo z TARIFF_COMPANY_2022.pdf",
 }
 
 
@@ -211,7 +231,14 @@ async def _ingest_all_async(pdfs: list[Path], batch_size: int) -> dict:
         for pdf in pdfs:
             stem = pdf.stem.upper()
             if stem not in DOCUMENT_REGISTRY:
-                typer.echo(f"  SKIP  {pdf.name} — brak wpisu w DOCUMENT_REGISTRY")
+                # Rozróżniamy "pominięty świadomie" od "pominięty, bo ktoś
+                # zapomniał wpisu" — bez tego pierwszy przypadek wygląda
+                # w logu jak przeoczenie i ktoś go kiedyś "naprawi".
+                reason = _KNOWN_DUPLICATES.get(stem)
+                if reason:
+                    typer.echo(f"  SKIP  {pdf.name} — pomijany świadomie: {reason}")
+                else:
+                    typer.echo(f"  SKIP  {pdf.name} — brak wpisu w DOCUMENT_REGISTRY")
                 summary["files_skipped"] += 1
                 continue
 

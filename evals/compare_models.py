@@ -50,9 +50,12 @@ from loguru import logger
 
 from evals.golden_dataset.questions import GOLDEN_DATASET, GoldenQuestion
 from evals.run_evals import _aggregate, _print_result, evaluate_question
+from tsl_rag.core.console import ensure_utf8_output
 from tsl_rag.core.settings import get_settings
 from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
+
+ensure_utf8_output()
 
 app = typer.Typer(add_completion=False)
 
