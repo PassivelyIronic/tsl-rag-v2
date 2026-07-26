@@ -111,9 +111,48 @@ class ChunkEmbedder:
             stored += n
             failed += len(batch) - n
 
+        if failed == 0:
+            stats_removed = await self._delete_stale(chunks)
+            if stats_removed:
+                logger.info(f"Usunięto {stats_removed} nieaktualnych chunków po ponownym ingeście")
+
         stats = {"total": len(chunks), "stored": stored, "failed": failed}
         logger.info(f"Embedding complete: {stats}")
         return stats
+
+    async def _delete_stale(self, chunks: Sequence[Chunk]) -> int:
+        """
+        Usuwa chunki dokumentu, których obecny ingest już nie wyprodukował.
+
+        UPSERT po chunk_id aktualizuje istniejące i dodaje nowe, ale nie ma
+        pojęcia o tych, które zniknęły. Gdy zmiana w parserze albo chunkerze
+        zmniejsza liczbę chunków dokumentu (np. po scaleniu słów rozerwanych
+        miękkim łącznikiem: 444 -> 438), nadwyżka z poprzedniego przebiegu
+        zostaje w bazie ze starą treścią i nadal bierze udział w retrievalu.
+        Zaobserwowane wprost: po naprawie tekstu w bazie siedziały dwa chunki
+        wciąż zawierające miękkie łączniki.
+
+        Kasujemy tylko w obrębie dokumentów objętych tym wywołaniem i tylko
+        gdy nie było błędów — inaczej nieudany ingest wyczyściłby korpus.
+        """
+        assert self._pool is not None, "Call inside async context manager"
+
+        by_document: dict[str, list[str]] = {}
+        for chunk in chunks:
+            by_document.setdefault(chunk.metadata.document_id, []).append(chunk.chunk_id)
+
+        removed = 0
+        async with self._pool.acquire() as conn:
+            for document_id, keep_ids in by_document.items():
+                deleted = await conn.fetch(
+                    "DELETE FROM document_chunks "
+                    "WHERE document_id = $1 AND chunk_id <> ALL($2::text[]) "
+                    "RETURNING chunk_id;",
+                    document_id,
+                    keep_ids,
+                )
+                removed += len(deleted)
+        return removed
 
     # pgvector upsert
 

@@ -23,6 +23,34 @@ CHAPTER_RE = re.compile(r"^(ROZDZIAŁ|CHAPTER)\s+([IVXLCDM]+|\d+)", re.I)
 ARTICLE_RE = re.compile(r"^Artykuł\s+(\d+[a-z]?)\s*$", re.I)
 PARA_RE = re.compile(r"^\s*(\d+)\.\s+\S")
 
+# Miękki łącznik (U+00AD) wraz z białymi znakami po nim. PDF-y EUR-Lexu
+# zawierają go w każdym miejscu podziału wiersza, więc po ekstrakcji tekst
+# zawiera "przynaj­ mniej", "wyko­ rzystać", "tygodnio­ wego".
+_SOFT_HYPHEN_BREAK = re.compile(r"\xad\s*")
+
+# Wielokrotne spacje i tabulatory wewnątrz wiersza. Ekstrakcja zostawia
+# podwójne spacje po liczbach ("9  godzin"), co utrudnia dopasowania dosłowne.
+# Podział na wiersze zachowujemy — na nim opiera się wykrywanie hierarchii.
+_INLINE_SPACES = re.compile(r"[ \t]{2,}")
+
+
+def normalize_pdf_text(text: str) -> str:
+    """
+    Sprząta artefakty ekstrakcji z PDF-a, zanim tekst pójdzie dalej.
+
+    Powód, dla którego to nie jest kosmetyka: miękki łącznik rozrywa słowo
+    na dwa fragmenty, a tokenizer BM25 robi z nich dwa bezużyteczne tokeny
+    ("tygodnio" + "wego"). Poprawne zapytanie nie ma wtedy jak trafić w to
+    miejsce, a model dostaje w kontekście tekst z połamanymi słowami.
+    W korpusie przed naprawą: 1258 wystąpień w 307 z 444 chunków.
+
+    Zmiana wpływa na treść chunków, więc wymaga ponownego ingestu i pomiaru
+    retrievalu przed i po (CLAUDE.md §9).
+    """
+    without_hyphens = _SOFT_HYPHEN_BREAK.sub("", text)
+    lines = [_INLINE_SPACES.sub(" ", line).strip() for line in without_hyphens.splitlines()]
+    return "\n".join(lines).strip()
+
 
 @dataclass
 class ParsedElement:
@@ -96,7 +124,7 @@ class LegalPDFParser:
 
             blocks = page.get_text("blocks")  # (x0,y0,x1,y1,text,block_no,block_type)
             for block in blocks:
-                text = block[4].strip()
+                text = normalize_pdf_text(block[4])
                 if not text or len(text) < 3:
                     continue
 
@@ -152,9 +180,17 @@ class LegalPDFParser:
     def _table_to_markdown(rows: list[list[str]]) -> str:
         if not rows:
             return ""
-        header = "| " + " | ".join(rows[0]) + " |"
-        sep = "| " + " | ".join(["---"] * len(rows[0])) + " |"
-        body = "\n".join("| " + " | ".join(r) + " |" for r in rows[1:])
+
+        # Komórki też przechodzą normalizację — taryfikatory kar są prawie
+        # wyłącznie tabelami, a miękkie łączniki i podziały wiersza siedzą
+        # w środku opisów naruszeń, czyli dokładnie tam, gdzie pada dopasowanie.
+        def cell(value: str | None) -> str:
+            return normalize_pdf_text(value or "").replace("\n", " ")
+
+        clean = [[cell(c) for c in row] for row in rows]
+        header = "| " + " | ".join(clean[0]) + " |"
+        sep = "| " + " | ".join(["---"] * len(clean[0])) + " |"
+        body = "\n".join("| " + " | ".join(r) + " |" for r in clean[1:])
         return "\n".join([header, sep, body])
 
 
