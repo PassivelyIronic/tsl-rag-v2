@@ -22,7 +22,9 @@ from loguru import logger
 
 from evals.golden_dataset.questions import GOLDEN_DATASET, GoldenQuestion
 from evals.matching import count_matches
+from evals.semantic_scorer import score_answer
 from tsl_rag.core.console import ensure_utf8_output
+from tsl_rag.core.embeddings import get_embedding_provider
 from tsl_rag.core.models import RetrievalRequest
 from tsl_rag.core.settings import get_settings
 from tsl_rag.generation.generator import RAGGenerator
@@ -50,6 +52,17 @@ REFUSAL_PHRASES = [
 def _is_refusal(answer: str) -> bool:
     lower = answer.lower()
     return any(p in lower for p in REFUSAL_PHRASES)
+
+
+async def _embed_batch(texts: list[str]) -> list[list[float]]:
+    """
+    Embedduje listę tekstów dla scorera semantycznego.
+
+    embed_query, nie embed_documents: porównujemy fakt do zdania odpowiedzi,
+    czyli symetrycznie. Prefiks "passage: " byłby tu niewłaściwy.
+    """
+    provider = get_embedding_provider()
+    return [await provider.embed_query(t) for t in texts]
 
 
 async def evaluate_question(
@@ -97,6 +110,12 @@ async def evaluate_question(
         fact_hits = count_matches(key_facts, response.answer)
         answer_score = fact_hits / len(key_facts) if key_facts else 1.0
 
+    # Ocena semantyczna liczona ZAWSZE i obok pozostałych, bo nic nie kosztuje
+    # (model embeddingów jest już wczytany do retrievalu) i jest deterministyczna.
+    # Odpowiada na pytanie, czy niski answer_score to wina systemu, czy metryki
+    # karzącej parafrazy.
+    semantic = await score_answer(question.key_facts, response.answer, _embed_batch)
+
     cited_docs = {c.document_id for c in response.citations}
     retrieved_docs = {r.chunk.metadata.document_id for r in results}
     expected_set = set(question.expected_docs)
@@ -123,6 +142,8 @@ async def evaluate_question(
         "variant": question.variant,
         "expected_docs": question.expected_docs,
         "answer_score": round(answer_score, 3),
+        "semantic_score": semantic["semantic_score"],
+        "semantic_per_fact": semantic["per_fact"],
         "citation_hit_rate": round(citation_hit, 3),
         "citation_precision": round(citation_precision, 3),
         "retrieval_recall": round(retrieval_recall, 3),
@@ -134,7 +155,7 @@ async def evaluate_question(
         "cited_docs": sorted(cited_docs),
         "retrieved_docs": sorted(retrieved_docs),
         "judge_reasoning": judge_reasoning,
-        "answer_preview": response.answer[:200],
+        "answer": response.answer,
     }
 
 
@@ -271,6 +292,7 @@ def _aggregate(all_results: list[dict]) -> dict:
         cat: {
             "count": len(items),
             "avg_answer_score": _avg(items, "answer_score"),
+            "avg_semantic_score": _avg(items, "semantic_score"),
             "avg_citation_hit": _avg(items, "citation_hit_rate"),
             "avg_citation_precision": _avg(items, "citation_precision"),
             "avg_retrieval_recall": _avg(items, "retrieval_recall"),
@@ -294,6 +316,7 @@ def _aggregate(all_results: list[dict]) -> dict:
         "measured_questions": n,
         "errors": len(errors),
         "avg_answer_score": round(sum(r["answer_score"] for r in results) / n, 3),
+        "avg_semantic_score": _avg(results, "semantic_score"),
         "avg_citation_hit_rate": round(sum(r["citation_hit_rate"] for r in results) / n, 3),
         "avg_citation_precision": _avg(results, "citation_precision"),
         "avg_retrieval_recall": _avg(results, "retrieval_recall"),
@@ -363,7 +386,9 @@ def _print_summary(s: dict, judge_model: str) -> None:
         print(f"\n  {s.get('note', '')}")
         print("=" * 72)
         return
-    print(f"  Answer score     : {s['avg_answer_score']:.3f}")
+    print(f"  Answer score     : {s['avg_answer_score']:.3f}  (keyword-match)")
+    if s.get("avg_semantic_score") is not None:
+        print(f"  Semantic score   : {s['avg_semantic_score']:.3f}  (embeddingi, lokalnie)")
     print(f"  Citation recall  : {s['avg_citation_hit_rate']:.3f}")
     print(f"  Citation prec.   : {s['avg_citation_precision']:.3f}")
     print(f"  Retrieval recall : {s['avg_retrieval_recall']:.3f}")

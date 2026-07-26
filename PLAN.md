@@ -301,9 +301,30 @@ przypadków aż 3 miały `retrieval_recall` = 1.00, czyli model dostał właści
 i mimo to odmówił. Prawdopodobnie w pięciu chunkach nie było akurat tego artykułu.
 Do rozstrzygnięcia: recall na poziomie artykułu, nie dokumentu.
 
-- [ ] **Rozstrzygnąć, czy 0.653 to limit systemu, czy limit metryki.** Wymaga oceny
-      semantycznej. Sędzia na Gemini nie działa (niżej), ale ten sam klucz OpenRouter
-      pozwala postawić sędziego na modelu płatnym za porównywalne grosze
+- [x] **Rozstrzygnięte: to był limit METRYKI, nie systemu.** Dodany scorer semantyczny
+      (`evals/semantic_scorer.py`) — porównuje oczekiwane fakty ze zdaniami odpowiedzi
+      przez embeddingi. Darmowy i deterministyczny, bo używa modelu wczytanego już do
+      retrievalu. Przeliczenie odpowiedzi z przebiegu referencyjnego:
+
+| Metoda oceny | Wynik na tych samych odpowiedziach |
+|---|---|
+| keyword-match | 0.596 |
+| **semantyczna** | **0.776** |
+
+      Wartość semantyczna jest **zaniżona** — 24 z 56 odpowiedzi było w zapisie obciętych
+      do 200 znaków. Rekord wyniku zapisuje teraz pełną treść, więc kolejny przebieg da
+      liczbę bez tego zastrzeżenia.
+
+      **Fakty liczbowe są w tym scorerze sprawdzane DOSŁOWNIE**, nie semantycznie. „Dzienny
+      czas jazdy to 11 godzin" jest semantycznie niemal identyczne z „9 godzin" — te same
+      słowa, ten sam przepis, różnica jednej cyfry. W systemie o limitach czasu pracy
+      i wysokości kar metryka, która tego nie łapie, byłaby gorsza niż bezużyteczna.
+
+- [ ] **LLM-as-a-judge — do decyzji, nie jest już konieczny.** Scorer semantyczny odpowiedział
+      na pytanie o sufit. Sędzia wnosi jedno, czego embeddingi nie zrobią: wykrycie odpowiedzi
+      płynnej i błędnej, bo semantycznie bliska bzdura dostaje wysoką ocenę. Koszt przy
+      `gpt-4o-mini` przez OpenRouter: ~0.03 USD za przebieg. Sędzia na Gemini pozostaje
+      niesprawny (zerowy limit klucza)
 - [ ] **`--use-judge` jest dziś niesprawny** — ten sam zerowy limit klucza Gemini. Dokumentacja
       opisuje ocenę semantyczną jako działającą, a nie jest. Do rozstrzygnięcia razem z modelem
       referencyjnym: albo klucz z limitem, albo sędzia na innym providerze. Dopóki to nie
@@ -358,11 +379,20 @@ miesięcznie — daje to **0.05 USD miesięcznie**. Pierwotne ograniczenie brzmi
 „bez karty i za darmo"; karta jest już podpięta do OpenRoutera, a saldo wystarcza
 na kilkanaście lat takiego użycia.
 
-To nie jest rekomendacja porzucenia darmowego wariantu, tylko odnotowanie, że
-najdroższy element celu podstawowego (latencja 19 s, którą Faza 5 miała maskować
-streamingiem i cache'em) znika za grosze. Do świadomej decyzji przy Fazie 3,
-razem z łańcuchem fallbacku — w którym płatny model jest naturalnym pierwszym
-wyborem, a darmowy zapasowym.
+**Decyzja (2026-07-26), oddana asystentowi do rozstrzygnięcia:**
+
+1. **Domyślna konfiguracja repo zostaje darmowa** (`OPENROUTER_CHAT_MODEL` =
+   `nvidia/nemotron-nano-9b-v2:free`). Repo ma być publiczne — ustawienie domyślne,
+   które wydaje pieniądze każdego, kto je sklonuje, jest złe niezależnie od kwoty.
+2. **We wdrożeniu dla użytkownika końcowego płatny model jest pierwszy w łańcuchu,
+   darmowy zapasowy.** 1.8 s wobec 19 s to różnica między „działa" a „chyba się
+   zawiesiło", a 0.05 USD miesięcznie nie jest kosztem. Cel brzmiał „mama korzysta
+   bez frustracji", nie „nigdy ani grosza" — a wyczerpanie salda przy takim układzie
+   nie psuje systemu, tylko go spowalnia.
+3. Realizacja: łańcuch fallbacku w Fazie 3. Do tego czasu nic się nie zmienia.
+
+Konsekwencja dla Fazy 5: streaming i cache przestają być sposobem na maskowanie
+19 sekund, a stają się zwykłą optymalizacją. To zdejmuje presję z tamtej fazy.
 
 ---
 
