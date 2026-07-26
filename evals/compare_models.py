@@ -56,13 +56,19 @@ from tsl_rag.retrieval.retriever import HybridRetriever
 
 app = typer.Typer(add_completion=False)
 
-# Kandydaci domyślni — zweryfikowani jako darmowi (":free") na OpenRouter
-# w lipcu 2026. Lista darmowych modeli zmienia się bez ostrzeżenia — przed
-# uruchomieniem porównaj z https://openrouter.ai/models?max_price=0
+# Kandydat domyślny — JEDEN, i to ten, który faktycznie zwrócił wyniki
+# w tym projekcie (evals/results/model_comparison.json).
+#
+# Poprzednia lista domyślna zawierała trzy slugi, z których żaden nie działał:
+#   deepseek/deepseek-chat-v3.1:free  → 404, wypadł z darmowej puli
+#   qwen/qwen3-235b-a22b:free         → 404, wypadł z darmowej puli
+#   meta-llama/llama-3.3-70b:free     → 400, urwane "-instruct" w slugu
+# Domyślne uruchomienie spalało więc dzienny limit na trzy pewne porażki.
+#
+# Nowych kandydatów dopisuj świadomie przez --models, po sprawdzeniu sluga
+# w zakładce API modelu (nazwa w katalogu ≠ slug API), a nie z pamięci.
 DEFAULT_CANDIDATES = [
-    "deepseek/deepseek-chat-v3.1:free",
-    "qwen/qwen3-235b-a22b:free",
-    "meta-llama/llama-3.3-70b:free",
+    "nvidia/nemotron-nano-9b-v2:free",
 ]
 
 # Sekundy między wywołaniami generacji — pokrywa limit OpenRouter (20/min,
@@ -212,20 +218,24 @@ def _print_comparison_table(all_results: dict[str, dict]) -> None:
     print(f"\n{'=' * 92}")
     print("PORÓWNANIE MODELI")
     print(f"{'=' * 92}")
-    print(f"{'model':45s} {'answer':>8s} {'citation':>9s} {'refusal':>8s} {'latency':>10s}")
+    print(
+        f"{'model':42s} {'answer':>8s} {'cite_rec':>9s} "
+        f"{'cite_prec':>10s} {'refusal':>8s} {'latency':>10s}"
+    )
     print("-" * 92)
 
     rankable: list[tuple[str, float, float]] = []
     for model_id, r in all_results.items():
         if "error" in r:
-            print(f"{model_id:45s}  BŁĄD: {r['error'][:40]}")
+            print(f"{model_id:42s}  BŁĄD: {r['error'][:40]}")
             continue
         s = r["summary"]
         refusal = s["refusal_precision"]
         refusal_str = f"{refusal:.2f}" if refusal is not None else "—"
         print(
-            f"{model_id:45s} {s['avg_answer_score']:8.3f} "
-            f"{s['avg_citation_hit_rate']:9.3f} {refusal_str:>8s} "
+            f"{model_id:42s} {s['avg_answer_score']:8.3f} "
+            f"{s['avg_citation_hit_rate']:9.3f} "
+            f"{s.get('avg_citation_precision', 0.0):10.3f} {refusal_str:>8s} "
             f"{s['avg_latency_ms']:9d}ms"
         )
         rankable.append((model_id, s["avg_answer_score"], s["avg_citation_hit_rate"]))
