@@ -161,7 +161,31 @@ def _classify_failure(
     return None
 
 
-async def run_evaluation(output_path: Path | None, use_judge: bool) -> None:
+def _failed_result(question: GoldenQuestion, exc: Exception) -> dict:
+    """Rekord pytania, które nie przeszło — z zachowaniem kształtu zwykłego wyniku."""
+    return {
+        "id": question.id,
+        "question": question.question,
+        "category": question.category,
+        "variant": question.variant,
+        "expected_docs": question.expected_docs,
+        "answer_score": 0.0,
+        "citation_hit_rate": 0.0,
+        "citation_precision": 0.0,
+        "retrieval_recall": 0.0,
+        "failure_stage": "error",
+        "has_answer": False,
+        "correctly_refused": False,
+        "incorrectly_refused": False,
+        "latency_ms": 0,
+        "cited_docs": [],
+        "retrieved_docs": [],
+        "judge_reasoning": None,
+        "answer_preview": f"[BŁĄD: {type(exc).__name__}: {str(exc)[:150]}]",
+    }
+
+
+async def run_evaluation(output_path: Path | None, use_judge: bool, sleep_s: float) -> None:
     judge: GeminiJudge | None = None
     if use_judge:
         from evals.judge import GeminiJudge as _GeminiJudge
@@ -179,13 +203,23 @@ async def run_evaluation(output_path: Path | None, use_judge: bool) -> None:
         generator = RAGGenerator()
         for i, question in enumerate(GOLDEN_DATASET):
             logger.info(f"[{i + 1}/{len(GOLDEN_DATASET)}] {question.question[:70]}")
-            result = await evaluate_question(question, retriever, generator, judge)
+            try:
+                result = await evaluate_question(question, retriever, generator, judge)
+            except Exception as exc:
+                # Jedno nieudane pytanie nie może zabijać całego przebiegu.
+                # Przy 56 pytaniach i darmowym limicie providera pojedyncze 429
+                # w połowie oznaczałoby utratę wszystkiego, co się już policzyło.
+                # Porażka zapisuje się jako wynik pytania, z widocznym powodem.
+                logger.error(f"  Pytanie nieudane: {type(exc).__name__}: {str(exc)[:160]}")
+                result = _failed_result(question, exc)
             results_list.append(result)
             _print_result(result)
 
-            if use_judge and i < len(GOLDEN_DATASET) - 1:
-                logger.info("⏳ Czekam 5 sekund na zresetowanie limitów Gemini API...")
-                await asyncio.sleep(5)
+            # Odstęp między pytaniami: darmowe tiery mają limit zapytań na
+            # minutę, a przy 56 pytaniach przebieg bez pauzy dostaje 429 w połowie.
+            pause = max(sleep_s, 5.0 if use_judge else 0.0)
+            if pause and i < len(GOLDEN_DATASET) - 1:
+                await asyncio.sleep(pause)
 
     summary = _aggregate(results_list)
     _print_summary(summary, judge_model)
@@ -329,8 +363,11 @@ def main(
     use_judge: bool = typer.Option(
         False, "--use-judge", "-j", help="Użyj Gemini jako LLM-as-a-Judge"
     ),
+    sleep_s: float = typer.Option(
+        0.0, "--sleep", help="Odstęp w sekundach między pytaniami (limity zapytań na minutę)"
+    ),
 ) -> None:
-    asyncio.run(run_evaluation(output, use_judge))
+    asyncio.run(run_evaluation(output, use_judge, sleep_s))
 
 
 if __name__ == "__main__":

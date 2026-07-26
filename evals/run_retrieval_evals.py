@@ -17,17 +17,21 @@ przechodzą przez LLM. Ten skrypt mierzy wyłącznie je i dzięki temu:
 - rozdziela etapy: dense, BM25, po fuzji RRF i po rerankingu, więc odpowiada
   na pytanie, czy reranker poprawia kolejność i który retriever wnosi trafienie.
 
-Zależność, o której trzeba wiedzieć
------------------------------------
-Embedding zapytania nadal wymaga działającego providera embeddingów (dziś:
-lokalna Ollama). Skrypt jest więc niezależny od API generacji i deterministyczny,
-ale **nie jest jeszcze uruchamialny w CI** — będzie po Fazie 2, gdy embeddingi
-przejdą na `sentence-transformers` in-process.
+Zależności
+----------
+Po Fazie 2 embeddingi liczą się lokalnie (`sentence-transformers`, CPU), więc
+skrypt nie potrzebuje ŻADNEJ usługi zewnętrznej ani klucza API. Wymaga tylko
+Postgresa z zaindeksowanym korpusem, czyli **nadaje się na bramkę w CI** —
+wystarczy serwis Postgresa i ingest w jobie.
+
+Progi bramkujące trzymane są w `evals/thresholds.yaml`, nie we fladze komendy,
+żeby CI i człowiek patrzyli na te same liczby, a ich zmiana była widoczna
+w diffie (zasada #1 z CLAUDE.md).
 
 Uruchomienie:
   uv run python -m evals.run_retrieval_evals
   uv run python -m evals.run_retrieval_evals --output evals/results/retrieval_001.json
-  uv run python -m evals.run_retrieval_evals --fail-under-recall5 0.80
+  uv run python -m evals.run_retrieval_evals --no-gate     # sam pomiar, bez bramki
 """
 
 from __future__ import annotations
@@ -196,7 +200,40 @@ def _print_report(summary: dict) -> None:
     print("=" * 78)
 
 
-async def run(output_path: Path | None, fail_under_recall5: float | None) -> int:
+_THRESHOLDS_PATH = Path(__file__).with_name("thresholds.yaml")
+
+
+def _check_thresholds(summary: dict, thresholds_path: Path) -> tuple[bool, list[str]]:
+    """
+    Porównuje wynik z progami z `evals/thresholds.yaml`.
+
+    Zwraca (czy_przeszło, linie_raportu). Progi są w pliku, a nie we fladze
+    komendy, żeby CI i człowiek patrzyli dokładnie na te same liczby, a ich
+    zmiana była widoczna w diffie.
+    """
+    import yaml
+
+    config = yaml.safe_load(thresholds_path.read_text(encoding="utf-8"))
+    limits = config["retrieval"]
+    stage = summary["stages"]["reranked"]
+
+    checks = [
+        ("recall@5", stage["recall@5"], limits["min_recall_at_5"]),
+        ("recall@10", stage["recall@10"], limits["min_recall_at_10"]),
+        ("MRR", stage["mrr"], limits["min_mrr"]),
+    ]
+
+    lines: list[str] = []
+    passed = True
+    for name, actual, minimum in checks:
+        ok = actual >= minimum
+        passed = passed and ok
+        mark = "OK  " if ok else "PONIŻEJ"
+        lines.append(f"  {mark:8s} {name:10s} {actual:.3f}  (próg {minimum:.3f})")
+    return passed, lines
+
+
+async def run(output_path: Path | None, check_thresholds: bool) -> int:
     # out_of_scope nie ma oczekiwanych dokumentów — recall byłby zawsze 1.0
     # i tylko zawyżałby średnie.
     questions = [q for q in GOLDEN_DATASET if q.expected_docs]
@@ -230,29 +267,36 @@ async def run(output_path: Path | None, fail_under_recall5: float | None) -> int
         )
         logger.info(f"Wyniki zapisane: {output_path}")
 
-    if fail_under_recall5 is not None:
-        actual = summary["stages"]["reranked"]["recall@5"]
-        if actual < fail_under_recall5:
-            print(
-                f"\nPRÓG NIESPEŁNIONY: recall@5 po rerankingu = {actual:.3f} "
-                f"< {fail_under_recall5:.3f}"
-            )
-            return 1
-        print(f"\nPróg spełniony: recall@5 = {actual:.3f} >= {fail_under_recall5:.3f}")
+    if not check_thresholds:
+        return 0
+
+    passed, lines = _check_thresholds(summary, _THRESHOLDS_PATH)
+    print(f"\n  Progi z {_THRESHOLDS_PATH.name}:")
+    for line in lines:
+        print(line)
+
+    if not passed:
+        print(
+            "\n  BRAMKA NIESPEŁNIONA. Zgodnie z zasadą #1 w CLAUDE.md progu NIE obniża się,\n"
+            "  żeby przebieg przeszedł — spadek jest wynikiem do zaraportowania."
+        )
+        return 1
+
+    print("\n  Bramka spełniona.")
     return 0
 
 
 @app.command()
 def main(
     output: Path = typer.Option(None, "--output", "-o"),  # noqa: B008
-    fail_under_recall5: float = typer.Option(
-        None,
-        "--fail-under-recall5",
-        help="Zwróć exit code 1, gdy recall@5 po rerankingu jest niższy niż podany próg",
+    no_gate: bool = typer.Option(
+        False,
+        "--no-gate",
+        help="Pomiń sprawdzenie progów z evals/thresholds.yaml (tylko pomiar)",
     ),
 ) -> None:
     """Mierzy retrieval na golden datasecie, bez wywoływania modelu generującego."""
-    exit_code = asyncio.run(run(output, fail_under_recall5))
+    exit_code = asyncio.run(run(output, check_thresholds=not no_gate))
     raise typer.Exit(exit_code)
 
 

@@ -1,0 +1,62 @@
+# Progi bramkujące jakość retrievalu.
+#
+# ZASADA #1 z CLAUDE.md: progu NIE OBNIŻA SIĘ po to, żeby przebieg przeszedł.
+# Spadek poniżej progu jest wynikiem do zaraportowania, nie liczbą do poprawienia.
+# Zmiana wartości w tym pliku wymaga OSOBNEGO commita z uzasadnieniem i nigdy
+# nie jest częścią commita, który tę metrykę psuje.
+#
+# Dlaczego progi stoją na metrykach retrievalu, a nie generacji
+# -------------------------------------------------------------
+# Zmierzone (evals/results/run_010–run_012): metryki zależne od LLM-a rozrzucają
+# się między przebiegami IDENTYCZNEGO kodu nawet o 0.133 (citation_hit_rate).
+# Bramka na takiej metryce przepuszcza regresję albo blokuje poprawę, zależnie
+# od losu. Metryki retrievalu w tych samych przebiegach były identyczne, bo nie
+# przechodzą przez model językowy — i to one bramkują.
+#
+# Skąd wzięte wartości
+# --------------------
+# Pomiar odniesienia: evals/results/retrieval_009_norerank_bm25_0.5.json
+# (multilingual-e5-base, BM25+dense 0.5/0.5, reranking wyłączony, 48 pytań):
+#
+#   recall@5  = 0.938    recall@10 = 0.969    recall@20 = 1.000    MRR = 0.874
+#
+# Margines: jedno pytanie z 48 to 0.021. Progi stoją o mniej więcej tyle poniżej
+# pomiaru, więc pojedyncze przesunięcie granicy chunka nie wywala bramki, ale
+# każda realna regresja już tak. Retrieval jest deterministyczny, więc margines
+# nie musi pokrywać szumu — pokrywa wyłącznie drobne skutki uboczne zmian
+# w parserze albo chunkerze.
+
+version: 1
+
+retrieval:
+  # Czy właściwy dokument trafia do kontekstu. Metryka główna: przy
+  # rerank_top_n = 5 to dokładnie tyle chunków widzi model generujący.
+  min_recall_at_5: 0.917
+
+  # Zapas na wypadek podniesienia rerank_top_n albo powrotu rerankingu.
+  min_recall_at_10: 0.948
+
+  # Kolejność ma znaczenie praktyczne: pięć chunków taryfikatora to ~12 290
+  # znaków przy MAX_CONTEXT_CHARS = 12 000, więc ostatni bywa obcięty
+  # i to MRR decyduje, co przetrwa.
+  min_mrr: 0.850
+
+# Metryki OBSERWOWANE, nieużywane jako bramka — do porównywania przebiegów
+# i wychwytywania regresji w konkretnej kategorii. Kategorie mają po 6–20 pytań,
+# więc jedno pytanie to od 0.05 do 0.17 i próg byłby zbyt gruboziarnisty.
+observed_only:
+  per_category_recall_at_5:
+    numeric_fact: 1.000
+    procedure: 1.000
+    scope: 0.875
+    cross_document: 0.857
+    penalty: 0.857
+
+# Metryki generacji — świadomie NIE bramkują (patrz nagłówek). Wartości
+# zapisane jako punkt odniesienia z datasetu v1 (15 pytań); po rozszerzeniu
+# do 56 pytań wymagają nowego pomiaru i nie są z nimi porównywalne.
+generation_reference_v1_dataset:
+  answer_score: 0.633
+  citation_hit_rate: 0.733
+  citation_precision: 0.800
+  refusal_precision: 1.000

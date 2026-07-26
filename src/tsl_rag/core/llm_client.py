@@ -18,6 +18,7 @@ from openai import AsyncOpenAI
 from tsl_rag.core.settings import Settings
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+GEMINI_OPENAI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
 
 def get_chat_client(settings: Settings) -> AsyncOpenAI:
@@ -50,6 +51,17 @@ def get_chat_client(settings: Settings) -> AsyncOpenAI:
                 "HTTP-Referer": "https://github.com/PassivelyIronic/TSL_RAG",
                 "X-Title": "TSL_RAG",
             },
+        )
+
+    if settings.chat_provider == "gemini":
+        # Gemini wystawia warstwę zgodną z OpenAI, więc nie potrzeba osobnego SDK.
+        # Używane jako MODEL REFERENCYJNY w ewaluacji (pomiar sufitu jakości),
+        # nie jako runtime dla użytkownika końcowego — patrz docs/PROVIDERS.md §5.
+        if not settings.gemini_api_key:
+            raise ValueError("GEMINI_API_KEY nie jest ustawiony")
+        return AsyncOpenAI(
+            base_url=GEMINI_OPENAI_BASE_URL,
+            api_key=settings.gemini_api_key.get_secret_value(),
         )
 
     if not settings.openai_api_key:

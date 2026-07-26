@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # wariant bez zależności sieciowej i bez rate limitu w runtime — embedding
     # zapytania liczy się przy każdym pytaniu (docs/PROVIDERS.md).
     embedding_provider: Literal["ollama", "openai", "local"] = "ollama"
-    chat_provider: Literal["ollama", "openai", "openrouter"] = "ollama"
+    chat_provider: Literal["ollama", "openai", "openrouter", "gemini"] = "ollama"
 
     # Ollama
     ollama_base_url: str = "http://localhost:11434"
@@ -66,8 +66,15 @@ class Settings(BaseSettings):
     local_embed_passage_prefix: str = "passage: "
     local_embed_batch_size: int = 16
 
-    # Gemini (opcjonalne, pod ewaluację — LLM-as-a-judge)
+    # --- Gemini ---
+    # Dwa zastosowania, oba WYŁĄCZNIE deweloperskie (docs/PROVIDERS.md §5):
+    #   1. LLM-as-a-judge w evals/judge.py
+    #   2. chat_provider="gemini" jako MODEL REFERENCYJNY — pomiar sufitu jakości
+    #      przy obecnym retrievalu, nie runtime dla użytkownika końcowego
+    # Warunki Google wymagają płatnych usług przy udostępnianiu klienta API
+    # użytkownikom w EOG, więc jako runtime dla mamy to się nie kwalifikuje.
     gemini_api_key: SecretStr | None = None
+    gemini_chat_model: str = "gemini-2.0-flash"
 
     @property
     def embedding_dimensions(self) -> int:
@@ -92,6 +99,8 @@ class Settings(BaseSettings):
             return self.openai_chat_model
         if self.chat_provider == "openrouter":
             return self.openrouter_chat_model
+        if self.chat_provider == "gemini":
+            return self.gemini_chat_model
         return self.ollama_llm_model
 
     # LLM params
