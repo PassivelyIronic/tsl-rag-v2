@@ -42,3 +42,44 @@ def test_tokenize_lowercases_and_splits():
     assert "driver" in tokens
     # Apostrofy i dwukropki usunięte
     assert "driver's" not in tokens
+
+
+def test_tokenize_keeps_polish_words_whole():
+    """
+    Regresja: wzorzec [a-z0-9]+ rozrywał polskie słowa na diakrytykach —
+    "prędkość" stawało się ["pr", "dko"]. Korpus i pytania są po polsku,
+    więc to psuło leksykalną połowę retrievalu.
+    """
+    tokens = _tokenize("Maksymalna prędkość i czas odpoczynku kierowcy")
+    assert "predkosc" in tokens
+    assert "odpoczynku" in tokens
+    assert "kierowcy" in tokens
+    # Żaden token nie jest urwanym fragmentem słowa
+    assert "pr" not in tokens
+    assert "dko" not in tokens
+
+
+def test_tokenize_folds_diacritics_both_ways():
+    """
+    Zapytanie bez ogonków musi trafić w tekst z ogonkami — użytkownik
+    nietechniczny często pisze "predkosc", nie "prędkość".
+    """
+    assert _tokenize("prędkość") == _tokenize("predkosc")
+    assert _tokenize("czas jazdy kierowcą") == _tokenize("czas jazdy kierowca")
+    # "ł" nie ma rozkładu NFKD, więc wymaga osobnej obsługi
+    assert _tokenize("łączny") == _tokenize("laczny")
+
+
+def test_rrf_weights_shift_ranking():
+    """
+    Wagi RRF muszą faktycznie wpływać na ranking — do niedawna te dwa pola
+    konfiguracji istniały, ale RRF ich nie czytał.
+    """
+    dense = [_fake_result("D", dense=0.9)]
+    bm25 = [_fake_result("B", bm25=10.0)]
+
+    dense_first = _reciprocal_rank_fusion(dense, bm25, dense_weight=0.9, bm25_weight=0.1)
+    bm25_first = _reciprocal_rank_fusion(dense, bm25, dense_weight=0.1, bm25_weight=0.9)
+
+    assert dense_first[0].chunk.chunk_id == "D"
+    assert bm25_first[0].chunk.chunk_id == "B"

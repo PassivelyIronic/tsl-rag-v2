@@ -30,7 +30,7 @@ Przy 15 pytaniach w GOLDEN_DATASET:
 
 Uruchomienie:
   uv run python -m evals.compare_models
-  uv run python -m evals.compare_models --models "deepseek/deepseek-chat-v3.1:free,qwen/qwen3-235b-a22b:free"
+  uv run python -m evals.compare_models --models "nvidia/nemotron-nano-9b-v2:free,<inny-slug>:free"
   uv run python -m evals.compare_models --use-judge     # ocena Gemini zamiast keyword-match
   uv run python -m evals.compare_models --resume        # pomija modele już zapisane w --output
 """

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import unicodedata
 from dataclasses import dataclass
 
 import asyncpg
@@ -310,9 +311,34 @@ def _reciprocal_rank_fusion(
     return sorted(by_id.values(), key=lambda r: r.rrf_score, reverse=True)
 
 
+# Litery, cyfry i podkreślenie w sensie unicode — z polskimi znakami włącznie.
+# Poprzedni wzorzec [a-z0-9]+ wycinał diakrytyki, rozrywając polskie słowa
+# na fragmenty: "prędkość" → ["pr", "dko"], "wynagrodzenie kierowcą" traciło
+# końcówkę. Cały korpus i wszystkie pytania są po polsku, więc leksykalna
+# połowa retrievalu pracowała na okaleczonych tokenach.
+_TOKEN_RE = re.compile(r"\w+", re.UNICODE)
+
+# "ł" nie ma rozkładu kanonicznego w unicode (U+0142), więc NFKD go nie tknie —
+# trzeba go złożyć ręcznie razem z wielką literą.
+_MANUAL_FOLD = str.maketrans({"ł": "l", "Ł": "l"})
+
+
+def _fold_diacritics(text: str) -> str:
+    """
+    Sprowadza polskie znaki do ASCII: "prędkość" → "predkosc".
+
+    Robimy to po OBU stronach (korpus i zapytanie), bo użytkownik nietechniczny
+    często pisze bez ogonków. Bez składania "predkosc" nie dopasowałoby się do
+    "prędkość" i BM25 nie zwracałby nic sensownego dla takiego zapytania —
+    a to jest realny sposób, w jaki ktoś pisze w pośpiechu.
+    """
+    folded = unicodedata.normalize("NFKD", text.translate(_MANUAL_FOLD))
+    return "".join(ch for ch in folded if not unicodedata.combining(ch))
+
+
 def _tokenize(text: str) -> list[str]:
-    """Prosty tokenizer: lowercase + split po non-alphanumeric."""
-    return re.findall(r"[a-z0-9]+", text.lower())
+    """Lowercase + składanie diakrytyków + podział na tokeny unicode."""
+    return _TOKEN_RE.findall(_fold_diacritics(text.lower()))
 
 
 def _row_to_chunk(row: asyncpg.Record) -> Chunk:
