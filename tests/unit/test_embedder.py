@@ -32,8 +32,29 @@ def test_make_batches_correct_size():
 
 def test_chunk_to_record_embedding_format():
     chunk = _fake_chunk("doc::0001")
-    record = _chunk_to_record(chunk)
+    record = _chunk_to_record(chunk, "test-model")
     emb_str = record[15]  # $16 — embedding
     assert emb_str.startswith("[")
     assert emb_str.endswith("]")
     assert emb_str.count(",") == 767
+
+
+def test_chunk_to_record_stores_embedding_model_in_metadata():
+    """
+    Model musi jechać razem z wektorem. Bez tego zmiana EMBEDDING_PROVIDER
+    bez ponownego ingestu porównuje zapytanie z jednego modelu do dokumentów
+    z innego — wyniki są bezsensowne, a nic nie zgłasza błędu.
+    """
+    import json
+
+    record = _chunk_to_record(_fake_chunk("doc::0001"), "intfloat/multilingual-e5-base")
+    metadata = json.loads(record[16])  # $17 — metadata JSONB
+    assert metadata["embedding_model"] == "intfloat/multilingual-e5-base"
+    assert metadata["embedding_dimensions"] == 768
+
+
+def test_chunk_to_record_rejects_missing_embedding():
+    chunk = _fake_chunk("doc::0001")
+    chunk.embedding = None
+    with pytest.raises(ValueError, match="nie ma embeddingu"):
+        _chunk_to_record(chunk, "test-model")

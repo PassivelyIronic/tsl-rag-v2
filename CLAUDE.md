@@ -70,15 +70,32 @@ i zajmują dwa miejsca w kontekście zamiast jednego.
 To są **dwa niezależne przełączniki** i mieszanie ich jest najczęstszym źródłem błędów w tym repo.
 
 ```python
-embedding_provider: Literal["ollama", "openai"]              # get_llm_client()
-chat_provider:      Literal["ollama", "openai", "openrouter"] # get_chat_client()
+embedding_provider: Literal["ollama", "openai", "local"]      # core/embeddings.py
+chat_provider:      Literal["ollama", "openai", "openrouter"] # core/llm_client.py
 ```
 
-- `get_llm_client()` → **wyłącznie embeddingi** (ingest, retrieval, health-check)
-- `get_chat_client()` → **wyłącznie generacja** (`RAGGenerator`)
+- `core/embeddings.py` → **wyłącznie embeddingi**. `get_embedding_provider()` zwraca obiekt
+  z `embed_query()` i `embed_documents()`. Cache'owany, bo w wariancie `local` trzyma
+  wczytany model.
+- `core/llm_client.py` → **wyłącznie generacja**. `get_chat_client()` zwraca `AsyncOpenAI`.
 
 Przy dodawaniu nowego providera: rozstrzygnij najpierw, którego z dwóch dotyczy.
 Nie wprowadzaj z powrotem wspólnej flagi `llm_provider` — została celowo rozbita.
+
+**`embed_query` ≠ `embed_documents`.** Modele z rodziny E5 wymagają prefiksów
+`query: ` i `passage: `. Pominięcie ich nie rzuca błędu — obniża jakość, niewidocznie.
+Prefiksy są jawną konfiguracją (`LOCAL_EMBED_QUERY_PREFIX`, `LOCAL_EMBED_PASSAGE_PREFIX`),
+a nie zgadywane z nazwy modelu. Przy przełączeniu na `bge-m3` trzeba je **wyzerować**,
+inaczej porównuje się model z prefiksami do modelu bez nich.
+
+**Zmiana modelu embeddingów wymaga ponownego ingestu.** Model, którym policzono wektor,
+zapisuje się w `metadata->>'embedding_model'`, a `HybridRetriever.warmup()` przerywa start,
+gdy korpus jest zaindeksowany innym modelem niż aktywny. Bez tego zapytanie z modelu A
+porównywane z dokumentami z modelu B daje losowe wyniki i **nie zgłasza błędu**.
+
+Do commita, w którym powstał `core/embeddings.py`, funkcja embeddingowa nazywała się
+`get_llm_client()` i mieszkała w `llm_client.py` — nazwa sugerowała model językowy,
+a chodziło o wektory. Jeśli widzisz to wywołanie w dokumentacji lub notatkach, jest nieaktualne.
 
 **Pułapka zaobserwowana w praktyce:** ustawienie `OPENROUTER_CHAT_MODEL` przy
 `CHAT_PROVIDER=ollama` nie robi nic. Model jest odczytywany dopiero, gdy provider
@@ -228,6 +245,9 @@ drugiego celu projektu.
 | ~~`RuntimeError: Event loop is closed` przy ingest~~ | ~~`asyncio.run()` per plik~~ | **Naprawione** — jeden `asyncio.run()` na całą pętlę (`_ingest_all_async`) |
 | `UnicodeEncodeError: 'charmap' codec` przy ingest/evalu | Konsola na polskim Windowsie to cp1250, nie zna `→` ani `✓`. Proces przerywa się w połowie i wygląda to na błąd pipeline'u | Punkty wejścia CLI wołają `ensure_utf8_output()` z `core/console.py`. Dodając nowy skrypt CLI, zawołaj to samo |
 | Dwa dokumenty o identycznej treści w wynikach retrievalu | PDF pobrany dwa razy pod inną nazwą (patrz `_KNOWN_DUPLICATES`) | Sprawdź `md5sum data/raw/*.pdf` przed dodaniem wpisu do rejestru. Duplikat nie jest nowym dokumentem |
+| `RuntimeError: Korpus zaindeksowano modelem embeddingów …` przy starcie | Zmieniono `EMBEDDING_PROVIDER` albo model bez ponownego ingestu | `ingest-all` od nowa. To zabezpieczenie, nie usterka — bez niego retrieval zwracałby losowe chunki bez żadnego błędu |
+| Retrieval zwraca bezsens po zmianie parsera/chunkera | Nadwyżkowe chunki z poprzedniego ingestu (mniej chunków niż wcześniej) | Naprawione przez `_delete_stale()`. Jeśli wróci: `SELECT count(*) FROM document_chunks` vs `stored` z ingestu |
+| Słowa rozerwane w środku (`tygodnio wego`) w kontekście lub cytowaniach | Miękkie łączniki z PDF-a (U+00AD) | Naprawione w `normalize_pdf_text()`. Nowy parser musi to wołać |
 | `404 — model unavailable for free` | Model wypadł z darmowej puli OpenRoutera | Sprawdź aktualny slug, nie retry'uj |
 | `400 — not a valid model ID` | Zły slug (brak `-it` itp.) | Skopiuj slug z zakładki API modelu |
 | `429 — Provider returned error` | Przeciążenie upstream providera, **nie** limit konta | Fallback na innego providera; retry rzadko pomaga |

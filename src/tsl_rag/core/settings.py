@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     # Rozdzielone celowo: embedding i chat mogą iść przez różnych providerów
     # jednocześnie, np. embeddingi lokalnie przez Ollamę (retrieval bez zmian),
     # a generacja przez darmowy model na OpenRouter (brak lokalnego GPU).
-    embedding_provider: Literal["ollama", "openai"] = "ollama"
+    # "local" = sentence-transformers w tym samym procesie, na CPU. Jedyny
+    # wariant bez zależności sieciowej i bez rate limitu w runtime — embedding
+    # zapytania liczy się przy każdym pytaniu (docs/PROVIDERS.md).
+    embedding_provider: Literal["ollama", "openai", "local"] = "ollama"
     chat_provider: Literal["ollama", "openai", "openrouter"] = "ollama"
 
     # Ollama
@@ -51,6 +54,18 @@ class Settings(BaseSettings):
     # Slug zmieniaj tylko po sprawdzeniu w zakładce API modelu (CLAUDE.md §5.3).
     openrouter_chat_model: str = "nvidia/nemotron-nano-9b-v2:free"
 
+    # --- Lokalne embeddingi (EMBEDDING_PROVIDER=local) ---
+    # Prefiksy są JAWNE, nie zgadywane z nazwy modelu. Modele z rodziny E5
+    # wymagają "query: " i "passage: ", a ich pominięcie nie powoduje błędu —
+    # tylko obniża jakość, niewidocznie. bge-m3 prefiksów nie używa, więc przy
+    # porównywaniu modeli trzeba je wyzerować, inaczej porównuje się model
+    # z prefiksami do modelu bez nich.
+    local_embed_model: str = "intfloat/multilingual-e5-base"
+    local_embed_dimensions: int = 768
+    local_embed_query_prefix: str = "query: "
+    local_embed_passage_prefix: str = "passage: "
+    local_embed_batch_size: int = 16
+
     # Gemini (opcjonalne, pod ewaluację — LLM-as-a-judge)
     gemini_api_key: SecretStr | None = None
 
@@ -58,7 +73,18 @@ class Settings(BaseSettings):
     def embedding_dimensions(self) -> int:
         if self.embedding_provider == "openai":
             return self.openai_embedding_dimensions
+        if self.embedding_provider == "local":
+            return self.local_embed_dimensions
         return self.ollama_embed_dimensions
+
+    @property
+    def active_embedding_model(self) -> str:
+        """Nazwa modelu embeddingów dla aktywnego providera — do snapshotów i logów."""
+        if self.embedding_provider == "openai":
+            return self.openai_embedding_model
+        if self.embedding_provider == "local":
+            return self.local_embed_model
+        return self.ollama_embed_model
 
     @property
     def active_llm_model(self) -> str:

@@ -5,10 +5,9 @@ from collections.abc import Sequence
 
 import asyncpg
 from loguru import logger
-from openai import AsyncOpenAI
 from tqdm.asyncio import tqdm
 
-from tsl_rag.core.llm_client import get_embeddings_batch, get_llm_client
+from tsl_rag.core.embeddings import EmbeddingProvider, get_embedding_provider
 from tsl_rag.core.models import Chunk
 from tsl_rag.core.settings import Settings, get_settings
 
@@ -51,11 +50,11 @@ class ChunkEmbedder:
         self.batch_size = batch_size
         self._pool: asyncpg.Pool | None = None
         self._settings: Settings | None = None  # ← inicjalizowane w __aenter__
-        self._client: AsyncOpenAI | None = None  # ← inicjalizowane w __aenter__
+        self._embeddings: EmbeddingProvider | None = None  # ← inicjalizowane w __aenter__
 
     async def __aenter__(self) -> ChunkEmbedder:
         self._settings = get_settings()
-        self._client = get_llm_client(self._settings)
+        self._embeddings = get_embedding_provider()
 
         raw_dsn = str(self._settings.postgres_dsn).replace("postgresql+asyncpg://", "postgresql://")
         self._pool = await asyncpg.create_pool(
@@ -74,7 +73,7 @@ class ChunkEmbedder:
             logger.warning("embed_and_store called with empty chunk list")
             return {"total": 0, "stored": 0, "failed": 0}
 
-        assert self._settings and self._client, "Call inside async context manager"
+        assert self._settings and self._embeddings, "Call inside async context manager"
 
         batches = _make_batches(list(chunks), self.batch_size)
         stored = 0
@@ -87,11 +86,8 @@ class ChunkEmbedder:
         for batch in tqdm(batches, desc="Embedding", unit="batch"):
             texts = [c.text for c in batch]
             try:
-                embeddings = await get_embeddings_batch(
-                    texts,
-                    self._settings,
-                    self._client,
-                )
+                # embed_documents, nie embed_query — dla modeli E5 to inny prefiks.
+                embeddings = await self._embeddings.embed_documents(texts)
             except Exception as exc:
                 logger.error(f"Embedding batch failed: {exc}")
                 failed += len(batch)
@@ -159,7 +155,8 @@ class ChunkEmbedder:
     async def _upsert_batch(self, batch: Sequence[Chunk]) -> int:
         assert self._pool is not None, "Call inside async context manager"
 
-        records = [_chunk_to_record(c) for c in batch if c.embedding]
+        assert self._embeddings is not None, "Call inside async context manager"
+        records = [_chunk_to_record(c, self._embeddings.model_name) for c in batch if c.embedding]
         if not records:
             return 0
 
@@ -179,7 +176,7 @@ def _make_batches(items: list[Chunk], size: int) -> list[list[Chunk]]:
     return [items[i : i + size] for i in range(0, len(items), size)]
 
 
-def _chunk_to_record(chunk: Chunk) -> tuple:
+def _chunk_to_record(chunk: Chunk, embedding_model: str = "") -> tuple:
     if chunk.embedding is None:
         # Nie powinno się zdarzyć — _upsert_batch filtruje chunki bez
         # embeddingu. Jawny wyjątek zamiast TypeError w środku f-stringa,
@@ -192,6 +189,13 @@ def _chunk_to_record(chunk: Chunk) -> tuple:
         {
             "source_file": m.title,
             "hierarchy_level": m.hierarchy_level.value,
+            # Model, którym policzono TEN wektor. Bez tego zmiana
+            # EMBEDDING_PROVIDER bez ponownego ingestu porównuje zapytanie
+            # z jednego modelu do dokumentów z innego — retrieval zwraca wtedy
+            # bezsens, ale nic nie zgłasza błędu. Retriever sprawdza to przy
+            # starcie (patrz HybridRetriever.warmup).
+            "embedding_model": embedding_model,
+            "embedding_dimensions": len(chunk.embedding or []),
         }
     )
     return (

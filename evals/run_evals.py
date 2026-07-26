@@ -270,12 +270,9 @@ def _config_snapshot() -> dict:
     warunki pomiaru (CLAUDE.md §5.2).
     """
     s = get_settings()
-    embedding_model = (
-        s.ollama_embed_model if s.embedding_provider == "ollama" else s.openai_embedding_model
-    )
     return {
         "embedding_provider": s.embedding_provider,
-        "embedding_model": embedding_model,
+        "embedding_model": s.active_embedding_model,
         "chat_provider": s.chat_provider,
         "chat_model": s.active_llm_model,
         "retrieval_top_k": s.retrieval_top_k,

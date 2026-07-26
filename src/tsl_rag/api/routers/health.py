@@ -22,7 +22,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel
 
-from tsl_rag.core.llm_client import get_embedding, get_llm_client
+from tsl_rag.core.embeddings import get_embedding_provider
 from tsl_rag.core.settings import Settings, get_settings
 
 router = APIRouter(tags=["health"])
@@ -74,8 +74,7 @@ async def readiness(
     # 3. Provider embeddingów — liczony przy KAŻDYM zapytaniu, więc jego
     #    niedostępność oznacza brak gotowości, nie tylko degradację.
     try:
-        client = get_llm_client(settings)
-        await get_embedding("health check", settings, client)
+        await get_embedding_provider().embed_query("health check")
         checks["embeddings"] = "ok"
     except Exception as exc:
         checks["embeddings"] = f"error: {exc}"

@@ -1,0 +1,2145 @@
+{
+  "summary": {
+    "questions": 48,
+    "stages": {
+      "dense": {
+        "recall@5": 0.854,
+        "recall@10": 0.927,
+        "recall@20": 0.969,
+        "mrr": 0.758
+      },
+      "bm25": {
+        "recall@5": 0.948,
+        "recall@10": 0.969,
+        "recall@20": 0.979,
+        "mrr": 0.833
+      },
+      "fused": {
+        "recall@5": 0.938,
+        "recall@10": 0.969,
+        "recall@20": 1.0,
+        "mrr": 0.874
+      },
+      "reranked": {
+        "recall@5": 0.854,
+        "recall@10": 0.917,
+        "recall@20": 1.0,
+        "mrr": 0.716
+      }
+    },
+    "per_category": {
+      "cross_document": {
+        "count": 7,
+        "recall@5_fused": 0.857,
+        "recall@5_reranked": 0.571,
+        "mrr_reranked": 0.685
+      },
+      "numeric_fact": {
+        "count": 20,
+        "recall@5_fused": 1.0,
+        "recall@5_reranked": 1.0,
+        "mrr_reranked": 0.872
+      },
+      "penalty": {
+        "count": 7,
+        "recall@5_fused": 0.857,
+        "recall@5_reranked": 0.429,
+        "mrr_reranked": 0.28
+      },
+      "procedure": {
+        "count": 6,
+        "recall@5_fused": 1.0,
+        "recall@5_reranked": 1.0,
+        "mrr_reranked": 0.722
+      },
+      "scope": {
+        "count": 8,
+        "recall@5_fused": 0.875,
+        "recall@5_reranked": 1.0,
+        "mrr_reranked": 0.729
+      }
+    },
+    "misses": []
+  },
+  "results": [
+    {
+      "id": "ec-561-max-daily-drive-std",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 8891,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 30
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec-561-max-daily-drive-bo",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1625,
+      "stages": {
+        "dense": {
+          "recall@5": 0.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.111,
+          "first_hit": 9,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 34
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec-561-max-daily-drive-pot",
+      "category": "numeric_fact",
+      "variant": "potoczne",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1905,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 0.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.111,
+          "first_hit": 9,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 37
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.25,
+          "first_hit": 4,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec-561-two-weeks-drive-std",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1719,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 30
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec-561-multi-crew-break-std",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1750,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 35
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "dir-2002-max-weekly-work-std",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "latency_ms": 1561,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "dir-2002-max-weekly-work-bo",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "latency_ms": 1546,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 29
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "dir-2002-60-hours-cond-std",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "latency_ms": 1578,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 28
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-165-tacho-inspection-std",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "latency_ms": 1453,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 35
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-165-tacho-inspection-bo",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "latency_ms": 1406,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 35
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-165-damaged-card-proc-std",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "latency_ms": 1375,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 28
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-2020-extend-drive-home-std",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1406,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 29
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-2020-extend-drive-home-bo",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1436,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 38
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-1071-financial-capacity-std",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_1071_2009"
+      ],
+      "latency_ms": 1500,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 33
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-1071-scope-2-5-tons-std",
+      "category": "scope",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_1071_2009"
+      ],
+      "latency_ms": 1391,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 30
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-1072-cabotage-def-std",
+      "category": "scope",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "latency_ms": 1375,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 33
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-1072-cabotage-def-bo",
+      "category": "scope",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "latency_ms": 1358,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 32
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "dir-2020-bilateral-post-std",
+      "category": "scope",
+      "variant": "standard",
+      "expected_docs": [
+        "directive_2020_1057"
+      ],
+      "latency_ms": 1406,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 28
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "dir-2020-bilateral-post-bo",
+      "category": "scope",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "directive_2020_1057"
+      ],
+      "latency_ms": 1438,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "aetr-armed-forces-scope-std",
+      "category": "scope",
+      "variant": "standard",
+      "expected_docs": [
+        "aetr"
+      ],
+      "latency_ms": 1375,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 32
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "aetr-armed-forces-scope-pot",
+      "category": "scope",
+      "variant": "potoczne",
+      "expected_docs": [
+        "aetr"
+      ],
+      "latency_ms": 1328,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.2,
+          "first_hit": 5,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 0.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.111,
+          "first_hit": 9,
+          "candidates": 32
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "aetr-min-age-7-5t-std",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "aetr"
+      ],
+      "latency_ms": 1405,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 30
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "pl-act-break-length-std",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "pl_driver_hours_act"
+      ],
+      "latency_ms": 1516,
+      "stages": {
+        "dense": {
+          "recall@5": 0.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.167,
+          "first_hit": 6,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 27
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.2,
+          "first_hit": 5,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "pl-act-overtime-cond-std",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "pl_driver_hours_act"
+      ],
+      "latency_ms": 1530,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-2016-false-card-pen-std",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "latency_ms": 1578,
+      "stages": {
+        "dense": {
+          "recall@5": 0.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.143,
+          "first_hit": 7,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "eu-2016-false-card-pen-pot",
+      "category": "penalty",
+      "variant": "potoczne",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "latency_ms": 1719,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.2,
+          "first_hit": 5,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "rr": 0.0,
+          "first_hit": null,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 1.0,
+          "rr": 0.077,
+          "first_hit": 13,
+          "candidates": 36
+        },
+        "reranked": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 1.0,
+          "rr": 0.056,
+          "first_hit": 18,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "tariff-drv-no-license-extract-std",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "latency_ms": 1389,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 32
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "tariff-drv-no-license-extract-pot",
+      "category": "penalty",
+      "variant": "potoczne",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "latency_ms": 1578,
+      "stages": {
+        "dense": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 1.0,
+          "rr": 0.071,
+          "first_hit": 14,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 33
+        },
+        "reranked": {
+          "recall@5": 0.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.125,
+          "first_hit": 8,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "tariff-comp-no-community-lic-std",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_docs": [
+        "tariff_company_2022"
+      ],
+      "latency_ms": 1578,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "tariff-man-no-qual-std",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_docs": [
+        "tariff_manager_2022"
+      ],
+      "latency_ms": 1578,
+      "stages": {
+        "dense": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "rr": 0.0,
+          "first_hit": null,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.25,
+          "first_hit": 4,
+          "candidates": 37
+        },
+        "reranked": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 1.0,
+          "rr": 0.053,
+          "first_hit": 19,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "cross-ec-561-dir-2002-std",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "latency_ms": 1686,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "cross-ec-561-eu-2020-1054-std",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006",
+        "eu_2020_1054"
+      ],
+      "latency_ms": 1593,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 22
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "cross-ec-561-aetr-std",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006",
+        "aetr"
+      ],
+      "latency_ms": 1563,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "cross-eu-165-eu-2020-1054-std",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_165_2014",
+        "eu_2020_1054"
+      ],
+      "latency_ms": 1375,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 36
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "cross-eu-2016-403-tariff-comp-std",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_2016_403",
+        "tariff_company_2022"
+      ],
+      "latency_ms": 1328,
+      "stages": {
+        "dense": {
+          "recall@5": 0.0,
+          "recall@10": 0.5,
+          "recall@20": 0.5,
+          "rr": 0.125,
+          "first_hit": 8,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 35
+        },
+        "reranked": {
+          "recall@5": 0.0,
+          "recall@10": 0.5,
+          "recall@20": 1.0,
+          "rr": 0.125,
+          "first_hit": 8,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "cross-eu-1071-eu-2016-403-std",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_1071_2009",
+        "eu_2016_403"
+      ],
+      "latency_ms": 1578,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 28
+        },
+        "reranked": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec561-czas-jazdy-tygodniowy",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1608,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 29
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec561-czas-jazdy-dwa-tygodnie",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1438,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 31
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec561-przerwa-po-4h30",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1468,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 34
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec561-odpoczynek-dzienny",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1421,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 34
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec561-odpoczynek-dzielony",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1375,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 32
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec561-odpoczynek-tygodniowy-regularny",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1360,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 23
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "ec561-odpoczynek-skrocony-ile-tygodni",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "latency_ms": 1639,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 27
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "dir200215-czas-pracy-sredni",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "latency_ms": 1500,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 32
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "dir200215-czas-pracy-przedluzony",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "latency_ms": 1671,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 29
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "cross-561-vs-200215-tygodniowe-limity",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "latency_ms": 1938,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 33
+        },
+        "reranked": {
+          "recall@5": 0.0,
+          "recall@10": 0.5,
+          "recall@20": 1.0,
+          "rr": 0.167,
+          "first_hit": 6,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "aetr-zakres-panstwa-trzecie",
+      "category": "scope",
+      "variant": "standard",
+      "expected_docs": [
+        "aetr"
+      ],
+      "latency_ms": 2280,
+      "stages": {
+        "dense": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 1.0,
+          "first_hit": 1,
+          "candidates": 30
+        },
+        "reranked": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.5,
+          "first_hit": 2,
+          "candidates": 20
+        }
+      }
+    },
+    {
+      "id": "penalty-kierowca-czas-jazdy",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "latency_ms": 2125,
+      "stages": {
+        "dense": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 1.0,
+          "rr": 0.053,
+          "first_hit": 19,
+          "candidates": 20
+        },
+        "bm25": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.333,
+          "first_hit": 3,
+          "candidates": 20
+        },
+        "fused": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "rr": 0.2,
+          "first_hit": 5,
+          "candidates": 33
+        },
+        "reranked": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 1.0,
+          "rr": 0.059,
+          "first_hit": 17,
+          "candidates": 20
+        }
+      }
+    }
+  ],
+  "config": {
+    "embedding_provider": "local",
+    "embedding_model": "intfloat/multilingual-e5-base",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "bm25_weight": 0.5,
+    "dense_weight": 0.5,
+    "eval_top_k": 20
+  }
+}

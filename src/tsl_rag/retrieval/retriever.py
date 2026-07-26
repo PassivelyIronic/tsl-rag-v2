@@ -23,7 +23,7 @@ import asyncpg
 from loguru import logger
 from rank_bm25 import BM25Okapi
 
-from tsl_rag.core.llm_client import get_embedding, get_llm_client
+from tsl_rag.core.embeddings import get_embedding_provider
 from tsl_rag.core.models import (
     Chunk,
     DocumentMetadata,
@@ -140,9 +140,48 @@ class HybridRetriever:
         pytanie jest wyraźnie wolniejsze od kolejnych, co przy latencji
         rzędu dwudziestu sekund jest różnicą odczuwalną.
         """
+        await self._check_embedding_model_matches_corpus()
         await self._ensure_bm25_index()
         if self._reranker:
             self._reranker.load()
+
+    async def _check_embedding_model_matches_corpus(self) -> None:
+        """
+        Ostrzega, gdy korpus zaindeksowano innym modelem embeddingów niż aktywny.
+
+        Najgroźniejsza możliwa pomyłka konfiguracyjna w tym systemie: zapytanie
+        embedowane modelem A porównywane z dokumentami embedowanymi modelem B
+        daje wyniki bez sensu, ale nie rzuca żadnego wyjątku — wymiary mogą się
+        zgadzać, `cosine` policzy się bez protestu, a retrieval po prostu zwróci
+        losowe chunki. Bez tego sprawdzenia objawem jest „jakość spadła",
+        a nie „konfiguracja się nie zgadza".
+        """
+        assert self._pool, "Use inside async context manager"
+        settings = get_settings()
+        active = settings.active_embedding_model
+
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT DISTINCT metadata->>'embedding_model' AS model FROM document_chunks;"
+            )
+        models = {row["model"] for row in rows}
+
+        if not models or models == {None}:
+            logger.warning(
+                f"Korpus nie zapisuje modelu embeddingów (ingest sprzed tej funkcji). "
+                f"Aktywny model: {active}. Jeśli retrieval zwraca bezsens, "
+                f"uruchom ingest od nowa."
+            )
+            return
+
+        mismatched = {m for m in models if m and m != active}
+        if mismatched:
+            raise RuntimeError(
+                f"Korpus zaindeksowano modelem embeddingów {sorted(mismatched)}, "
+                f"a aktywny jest {active!r}. Zapytania i dokumenty byłyby liczone "
+                f"różnymi modelami, co daje bezsensowne wyniki. "
+                f"Uruchom ponownie: uv run python -m tsl_rag.ingestion.cli ingest-all data/raw/"
+            )
 
     async def retrieve(self, request: RetrievalRequest) -> list[RetrievalResult]:
         """
@@ -158,10 +197,10 @@ class HybridRetriever:
         Używane przez ewaluację retrievalu (`evals/run_retrieval_evals.py`).
         """
         settings = get_settings()
-        client = get_llm_client(settings)
 
-        # 1. Embed query
-        query_embedding = await get_embedding(request.query, settings, client)
+        # 1. Embed query — embed_query, nie embed_documents: modele E5 wymagają
+        # innego prefiksu dla zapytania niż dla dokumentu.
+        query_embedding = await get_embedding_provider().embed_query(request.query)
 
         # 2. Dense search (pgvector)
         dense_results = await self._dense_search(

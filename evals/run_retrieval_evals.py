@@ -149,9 +149,7 @@ def _config_snapshot() -> dict:
     s = get_settings()
     return {
         "embedding_provider": s.embedding_provider,
-        "embedding_model": (
-            s.ollama_embed_model if s.embedding_provider == "ollama" else s.openai_embedding_model
-        ),
+        "embedding_model": s.active_embedding_model,
         "reranker_model": s.reranker_model,
         "bm25_weight": s.bm25_weight,
         "dense_weight": s.dense_weight,
