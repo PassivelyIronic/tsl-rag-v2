@@ -153,8 +153,10 @@ Zostaje:
       że tylko metryki retrievalu są stabilne, więc tylko one mogą bramkować. Dodatkowo:
       przebieg bez kosztu i bez klucza API, czyli nadaje się do CI. Odpowiada też na pytanie,
       czy reranker pomaga, czy szkodzi
-- [ ] **Ustalić progi bramkujące na metrykach retrievalu** i zapisać w `evals/thresholds.yaml`.
-      Punkt odniesienia: `recall@5` po rerankingu = 0.854, powtarzalny
+- [x] **Progi bramkujące w `evals/thresholds.yaml`** (2026-07-26): `recall@5` ≥ 0.917,
+      `recall@10` ≥ 0.948, MRR ≥ 0.850, przy pomiarze 0.938 / 0.969 / 0.874. Margines to
+      mniej więcej jedno pytanie z 48. `run_retrieval_evals` sprawdza je domyślnie i zwraca
+      exit code 1 poniżej progu, czyli nadaje się na bramkę promocji
 
 ### Zmierzone wąskie gardło: cross-encoder, nie fuzja ani embeddingi
 
@@ -272,12 +274,24 @@ bo ta metryka porównuje zwrócone dokumenty z oczekiwanymi i nie zależy od `ex
       objętości. Do sprawdzenia: czy PDF kierowcy jest kompletny, czy nie jest skanem
       z ubogim tekstem, i czy `document_type=penalty_tariff` + `contains_penalty` nie powinny
       wchodzić do zapytania jako filtr, gdy pytanie dotyczy kar
-- [ ] **Model referencyjny, płatny, jednorazowo.** Golden dataset raz na `gpt-4o` albo modelu
-      Anthropic, żeby ustalić sufit jakości przy obecnym retrievalu. Bez tego nie wiadomo,
-      czy `0.633` znaczy „darmowy model jest słaby", czy „retrieval podaje zły kontekst".
-      Koszt rzędu kilku centów. Runtime zostaje darmowy — płatny jest wyłącznie pomiar
-- [ ] Ocena `--use-judge` na rozszerzonym datasecie; keyword-match karze poprawne odpowiedzi
-      sformułowane inaczej („dziewięć godzin" ≠ „9 godzin")
+- [ ] **Model referencyjny — ZABLOKOWANY, wymaga decyzji.** Celem jest sufit jakości przy
+      obecnym retrievalu: bez niego nie wiadomo, czy niski `answer_score` znaczy „darmowy
+      model jest słaby", czy „retrieval podaje zły kontekst". Ta druga część jest już
+      częściowo odpowiedziana osobno — `recall@5` = 0.938 mówi, że właściwy dokument trafia
+      do kontekstu w 94% przypadków, więc podejrzenie pada na generację.
+      Stan providerów sprawdzony 2026-07-26:
+      - `gpt-4o` / Anthropic: **brak `OPENAI_API_KEY`**. Koszt rzędu kilku centów za przebieg,
+        decyzja właściciela repo. Runtime zostaje darmowy — płatny byłby wyłącznie pomiar
+      - Gemini: dodany jako `chat_provider="gemini"`, ale klucz ma **zerowy limit** free tier
+        (`limit: 0` w komunikacie 429). `gemini-2.5-flash` zwraca dodatkowo 404 „no longer
+        available", mimo obecności na liście modeli z API
+      - z darmowych działa tylko rodzina `gemma`, ale zwraca rozumowanie wewnątrz treści
+        odpowiedzi (`<thought>`), więc wymagałaby osobnej obsługi formatu
+- [ ] **`--use-judge` jest dziś niesprawny** — ten sam zerowy limit klucza Gemini. Dokumentacja
+      opisuje ocenę semantyczną jako działającą, a nie jest. Do rozstrzygnięcia razem z modelem
+      referencyjnym: albo klucz z limitem, albo sędzia na innym providerze. Dopóki to nie
+      zadziała, jedyną dostępną oceną jest keyword-match, który karze poprawne odpowiedzi
+      sformułowane inaczej niż `expected_answer`
 
 **Gate:** dla każdego pytania wiadomo, czy porażka leży w retrievalu, czy w generacji
 (✅ osiągnięte dla obecnych 15), przy min. 5 pytaniach na kategorię (❌), ze znanym sufitem

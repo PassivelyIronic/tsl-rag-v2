@@ -8,7 +8,7 @@ from loguru import logger
 
 from tsl_rag.core.llm_client import get_chat_client
 from tsl_rag.core.models import Citation, QueryResponse
-from tsl_rag.core.settings import get_settings
+from tsl_rag.core.settings import Settings, get_settings
 from tsl_rag.retrieval.retriever import RetrievalResult
 
 SYSTEM_PROMPT = dedent("""\
@@ -37,6 +37,22 @@ SYSTEM_PROMPT = dedent("""\
 """)
 
 _NO_ANSWER_MARKER = "Nie mogę odpowiedzieć"
+
+
+def _reasoning_kwargs(settings: Settings) -> dict:
+    """
+    Parametr sterujący rozumowaniem, w formie właściwej dla providera.
+
+    OpenRouter przyjmuje ujednolicone `reasoning: {"effort": ...}` w ciele
+    żądania, reszta providerów zgodnych z OpenAI — `reasoning_effort`.
+    Puste ustawienie oznacza, że nie wysyłamy nic i zostaje zachowanie domyślne.
+    """
+    effort = settings.llm_reasoning_effort
+    if not effort:
+        return {}
+    if settings.chat_provider == "openrouter":
+        return {"extra_body": {"reasoning": {"effort": effort}}}
+    return {"reasoning_effort": effort}
 
 
 class RAGGenerator:
@@ -71,6 +87,7 @@ class RAGGenerator:
             ],
             temperature=settings.llm_temperature,
             max_tokens=settings.llm_max_tokens,
+            **_reasoning_kwargs(settings),
         )
 
         choice = response.choices[0]

@@ -240,7 +240,24 @@ async def run_evaluation(output_path: Path | None, use_judge: bool, sleep_s: flo
         logger.info(f"Wyniki zapisane: {output_path}")
 
 
-def _aggregate(results: list[dict]) -> dict:
+def _aggregate(all_results: list[dict]) -> dict:
+    # Pytania, które padły na błędzie providera (429, timeout), są WYŁĄCZONE
+    # z metryk jakości. Nieudane wywołanie API nie jest pomiarem: liczenie go
+    # jako zero dawało raporty w rodzaju "retrieval_recall = 0.054" dla
+    # przebiegu, w którym retrieval nie miał okazji zawinić. Liczba błędów
+    # jest raportowana osobno i wprost.
+    errors = [r for r in all_results if r.get("failure_stage") == "error"]
+    results = [r for r in all_results if r.get("failure_stage") != "error"]
+
+    if not results:
+        return {
+            "total_questions": len(all_results),
+            "errors": len(errors),
+            "note": "Wszystkie pytania padły na błędzie providera — brak pomiaru jakości.",
+            "per_category": {},
+            "failure_stages": {"error": len(errors)},
+        }
+
     n = len(results)
     categories: dict[str, list[dict]] = {}
     for r in results:
@@ -273,7 +290,9 @@ def _aggregate(results: list[dict]) -> dict:
             failure_stages[stage] = failure_stages.get(stage, 0) + 1
 
     return {
-        "total_questions": n,
+        "total_questions": len(all_results),
+        "measured_questions": n,
+        "errors": len(errors),
         "avg_answer_score": round(sum(r["answer_score"] for r in results) / n, 3),
         "avg_citation_hit_rate": round(sum(r["citation_hit_rate"] for r in results) / n, 3),
         "avg_citation_precision": _avg(results, "citation_precision"),
@@ -335,6 +354,15 @@ def _print_summary(s: dict, judge_model: str) -> None:
     print(f"EVALUATION SUMMARY  [{judge_model}]")
     print(f"{'=' * 72}")
     print(f"  Questions        : {s['total_questions']}")
+    if s.get("errors"):
+        print(
+            f"  BŁĘDY PROVIDERA  : {s['errors']} — wyłączone z metryk jakości "
+            f"(zmierzono {s.get('measured_questions', 0)})"
+        )
+    if "avg_answer_score" not in s:
+        print(f"\n  {s.get('note', '')}")
+        print("=" * 72)
+        return
     print(f"  Answer score     : {s['avg_answer_score']:.3f}")
     print(f"  Citation recall  : {s['avg_citation_hit_rate']:.3f}")
     print(f"  Citation prec.   : {s['avg_citation_precision']:.3f}")

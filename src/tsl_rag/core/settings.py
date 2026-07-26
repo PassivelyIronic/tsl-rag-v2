@@ -107,6 +107,19 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.0
     llm_max_tokens: int = 1024
 
+    # Sterowanie rozumowaniem modeli typu "reasoning". Puste = nie wysyłamy
+    # parametru wcale (zachowanie domyślne providera).
+    #
+    # Po co: zmierzone na nvidia/nemotron-nano-9b-v2:free — 455 z 621 tokenów
+    # wyjścia poszło na reasoning, a przy dłuższym łańcuchu model wyczerpuje
+    # llm_max_tokens i zwraca PUSTĄ treść. Wyłączenie rozumowania powinno
+    # jednocześnie usunąć puste odpowiedzi i skrócić latencję.
+    #
+    # Wysyłane jako `reasoning: {"effort": ...}` przez OpenRouter i jako
+    # `reasoning_effort` przez pozostałych. Nie każdy model to obsługuje —
+    # Gemma odpowiada wtedy 400 "Thinking budget is not supported".
+    llm_reasoning_effort: Literal["", "none", "minimal", "low", "medium", "high"] = ""
+
     postgres_dsn: PostgresDsn
 
     # --- Retrieval ---
