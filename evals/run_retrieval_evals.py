@@ -48,6 +48,7 @@ import typer
 from loguru import logger
 
 from evals.golden_dataset.questions import GOLDEN_DATASET, GoldenQuestion
+from evals.matching import count_matches
 from evals.retrieval_metrics import first_hit_position, recall_at_k, reciprocal_rank
 from tsl_rag.core.console import ensure_utf8_output
 from tsl_rag.core.models import RetrievalRequest
@@ -72,6 +73,36 @@ def _doc_ids(results: list[RetrievalResult]) -> list[str]:
     return [r.chunk.metadata.document_id for r in results]
 
 
+def fact_recall_at_k(
+    results: list[RetrievalResult],
+    key_facts: list[str],
+    k: int,
+) -> float:
+    """
+    Ile oczekiwanych faktów faktycznie stoi w TREŚCI pobranych chunków.
+
+    Po co obok recall@k: recall po dokumentach mówi tylko, że właściwy AKT
+    wszedł do kontekstu — nie że wszedł właściwy PRZEPIS. Widać to było przy
+    modelu referencyjnym, gdzie 3 z 6 błędnych odmów miało recall = 1.00:
+    model dostał właściwe rozporządzenie i mimo to odmówił, bo w pięciu
+    chunkach nie było akurat tego artykułu.
+
+    Ta metryka jest też jedynym zabezpieczeniem przed graniem pod recall
+    dokumentowy. Ograniczenie liczby chunków na dokument mechanicznie zwiększa
+    liczbę RÓŻNYCH dokumentów w top-5, więc podnosi recall@k niemal
+    tautologicznie — a jednocześnie może wyrzucić z kontekstu wiersz z kwotą.
+    Dopiero fact recall pokazuje, po której stronie wychodzi bilans.
+
+    Dopasowanie przez evals.matching, czyli tak samo jak ocena odpowiedzi:
+    fakty liczbowe z granicą cyfry ("200" nie trafia w "2000"), składanie
+    diakrytyków włączone, bo korpus bywa zapisany niekonsekwentnie.
+    """
+    if not key_facts:
+        return 1.0
+    context = "\n".join(r.chunk.text for r in results[:k])
+    return count_matches(key_facts, context, fold=True) / len(key_facts)
+
+
 async def evaluate_question_retrieval(
     question: GoldenQuestion,
     retriever: HybridRetriever,
@@ -91,6 +122,12 @@ async def evaluate_question_retrieval(
         "fused": _doc_ids(stages.fused),
         "reranked": _doc_ids(stages.final),
     }
+    results_by_stage = {
+        "dense": stages.dense,
+        "bm25": stages.bm25,
+        "fused": stages.fused,
+        "reranked": stages.final,
+    }
 
     record: dict = {
         "id": question.id,
@@ -105,6 +142,12 @@ async def evaluate_question_retrieval(
         record["stages"][stage] = {
             **{
                 f"recall@{k}": round(recall_at_k(doc_ids, question.expected_docs, k), 3)
+                for k in _K_VALUES
+            },
+            **{
+                f"fact_recall@{k}": round(
+                    fact_recall_at_k(results_by_stage[stage], question.key_facts, k), 3
+                )
                 for k in _K_VALUES
             },
             "rr": round(reciprocal_rank(doc_ids, question.expected_docs), 3),
@@ -127,6 +170,10 @@ def _aggregate(records: list[dict]) -> dict:
                 f"recall@{k}": avg([r["stages"][stage][f"recall@{k}"] for r in records])
                 for k in _K_VALUES
             },
+            **{
+                f"fact_recall@{k}": avg([r["stages"][stage][f"fact_recall@{k}"] for r in records])
+                for k in _K_VALUES
+            },
             "mrr": avg([r["stages"][stage]["rr"] for r in records]),
         }
 
@@ -139,6 +186,7 @@ def _aggregate(records: list[dict]) -> dict:
             "count": len(items),
             "recall@5_fused": avg([i["stages"]["fused"]["recall@5"] for i in items]),
             "recall@5_reranked": avg([i["stages"]["reranked"]["recall@5"] for i in items]),
+            "fact_recall@5_fused": avg([i["stages"]["fused"]["fact_recall@5"] for i in items]),
             "mrr_reranked": avg([i["stages"]["reranked"]["rr"] for i in items]),
         }
 
@@ -167,22 +215,33 @@ def _print_report(summary: dict) -> None:
     print(f"{'=' * 78}")
     print(f"  Pytań: {summary['questions']}  (bez out_of_scope — brak oczekiwanych dokumentów)")
     print()
-    print(f"  {'etap':10s} {'recall@5':>9s} {'recall@10':>10s} {'recall@20':>10s} {'MRR':>7s}")
-    print(f"  {'-' * 50}")
+    print(
+        f"  {'etap':10s} {'recall@5':>9s} {'recall@10':>10s} {'recall@20':>10s} "
+        f"{'MRR':>7s} {'fakty@5':>8s} {'fakty@20':>9s}"
+    )
+    print(f"  {'-' * 70}")
     for stage in _STAGES:
         s = summary["stages"][stage]
         print(
             f"  {stage:10s} {s['recall@5']:9.3f} {s['recall@10']:10.3f} "
-            f"{s['recall@20']:10.3f} {s['mrr']:7.3f}"
+            f"{s['recall@20']:10.3f} {s['mrr']:7.3f} "
+            f"{s['fact_recall@5']:8.3f} {s['fact_recall@20']:9.3f}"
         )
+    print(
+        "\n  'fakty@k' = ile oczekiwanych faktów stoi w TREŚCI k pobranych chunków.\n"
+        "  recall@k mówi tylko, że wszedł właściwy AKT — nie że wszedł właściwy PRZEPIS."
+    )
 
     print("\n  Per kategoria (recall@5):")
-    print(f"  {'kategoria':20s} {'n':>3s} {'po RRF':>8s} {'po rerank':>10s} {'MRR':>7s}")
-    print(f"  {'-' * 52}")
+    print(
+        f"  {'kategoria':20s} {'n':>3s} {'po RRF':>8s} {'po rerank':>10s} {'MRR':>7s} {'fakty@5':>8s}"
+    )
+    print(f"  {'-' * 61}")
     for category, v in summary["per_category"].items():
         print(
             f"  {category:20s} {v['count']:3d} {v['recall@5_fused']:8.3f} "
-            f"{v['recall@5_reranked']:10.3f} {v['mrr_reranked']:7.3f}"
+            f"{v['recall@5_reranked']:10.3f} {v['mrr_reranked']:7.3f} "
+            f"{v['fact_recall@5_fused']:8.3f}"
         )
 
     if summary["misses"]:

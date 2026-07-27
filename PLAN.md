@@ -96,10 +96,12 @@ były nieinterpretowalnym zerem, mają rozpoznanie:
 | `scope` | **generacja** | `aetr` **był** w kontekście (`ret=1.00`), a model zacytował `ec_561_2006` i `eu_1072_2009` |
 | `numeric_fact` (1 z 9) | **generacja** | Poprawna treść, brak cytowania |
 
-**Diagnoza dla `penalty`** wynika wprost z asymetrii korpusu: taryfikator kierowcy ma
-**5 chunków**, taryfikator przedsiębiorcy **15**, a klasyfikacja naruszeń `eu_2016_403` — 24.
-Przy pytaniu o kary dla kierowcy retriever ma pięciokrotnie mniej materiału do dopasowania
-w dokumencie właściwym niż w konkurencyjnym. To problem korpusu i retrievalu, nie promptu.
+**Diagnoza dla `penalty` — NIEAKTUALNA, zastąpiona pomiarem z 2026-07-27** (Faza 1 niżej).
+Brzmiała: asymetria korpusu, bo taryfikator kierowcy ma 5 chunków, przedsiębiorcy 15,
+a klasyfikacja naruszeń `eu_2016_403` — 24. Liczby się zgadzają, ale wniosek był zły:
+PDF kierowcy jest kompletny, a filtr po `contains_penalty` nic nie da, bo konkurujące
+chunki mają tę samą flagę. Realna przyczyna to dense (MRR 0.352 na tej kategorii wobec
+0.619 dla BM25), a mierzona faktami w kontekście kategoria wypada wcale nie najgorzej.
 
 ### Naprawione w tej iteracji
 
@@ -132,7 +134,7 @@ w dokumencie właściwym niż w konkurencyjnym. To problem korpusu i retrievalu,
 
 ```powershell
 uv run python -m evals.run_retrieval_evals    # ~40 s, ma pokazać "Bramka spełniona"
-uv run pytest -m unit                          # 55 testów
+uv run pytest -m unit                          # 77 testów
 ```
 
 Kolejność, w mojej ocenie:
@@ -383,11 +385,61 @@ pytanie nie mogło dostać punktu niezależnie od jakości odpowiedzi:
 **Konsekwencja dla wcześniejszej diagnozy:** porażka kategorii `scope` była defektem datasetu,
 nie generacji. Zerowe `retrieval_recall` dla `penalty` i `cross_document` pozostaje w mocy,
 bo ta metryka porównuje zwrócone dokumenty z oczekiwanymi i nie zależy od `expected_answer`.
-- [ ] **Zdiagnozować `penalty` po stronie korpusu.** Hipoteza: taryfikator kierowcy (5 chunków)
-      przegrywa z taryfikatorem przedsiębiorcy (15) i klasyfikacją naruszeń (24) na samej
-      objętości. Do sprawdzenia: czy PDF kierowcy jest kompletny, czy nie jest skanem
-      z ubogim tekstem, i czy `document_type=penalty_tariff` + `contains_penalty` nie powinny
-      wchodzić do zapytania jako filtr, gdy pytanie dotyczy kar
+- [x] **`penalty` zdiagnozowane (2026-07-27) — obie hipotezy z tego punktu są błędne.**
+
+      **PDF kierowcy jest kompletny:** 5 stron, 12 388 znaków ekstrakcji, z czego 10 830
+      w chunkach. To mały dokument, nie urwany skan ani skan bez warstwy tekstowej.
+
+      **Filtr `contains_penalty` nie zadziała**, bo konkurenci mają tę samą flagę. W pytaniu
+      `penalty-kierowca-czas-jazdy` pozycje 1-4 to cztery chunki **tego samego** dokumentu
+      i artykułu (`eu_2016_403`, Art. 3), wszystkie z `contains_penalty=true`; oczekiwany
+      `tariff_driver_2022` stoi na 5. Boost na tę flagę zostawiłby je dokładnie tam, gdzie są.
+
+      **Co jest naprawdę:** to dense ciągnie kategorię w dół. MRR na `penalty`:
+      bm25 0.619, fused 0.480, dense 0.352. Pozycje pierwszego trafienia w dense to
+      7, 5, 14, 19 albo wcale. Fuzja 50/50 psuje ranking, który BM25 miał poprawny.
+
+      **Skala problemu jest jednak mniejsza, niż mówi MRR.** Mierzone faktami w treści
+      kontekstu (metryka niżej) `penalty` ma `fakty@5` = 0.857, czyli tyle co recall
+      dokumentowy — treść z odpowiedzią zwykle JEST w piątce, tylko nisko. Najsłabszą
+      kategorią w tym ujęciu jest `scope` (0.625 przy recall 0.875), nie `penalty`.
+
+- [x] **Recall po treści, nie po dokumentach — `fact_recall@k`** (2026-07-27).
+      `expected_articles` jest w schemacie datasetu, ale puste we wszystkich 56 pytaniach,
+      więc metryka nie opiera się na anotacjach: sprawdza, ile fragmentów `expected_answer`
+      występuje **w tekście pobranych chunków**, tym samym dopasowaniem co ocena odpowiedzi
+      (granica cyfry dla liczb, składanie diakrytyków). Baseline, `retrieval_011`:
+
+| etap | recall@5 | MRR | `fakty@5` | `fakty@20` |
+|---|---|---|---|---|
+| dense | 0.854 | 0.758 | 0.809 | 0.892 |
+| bm25 | 0.948 | 0.833 | 0.858 | 0.878 |
+| **fused** | **0.938** | **0.874** | **0.840** | **0.951** |
+
+      Per kategoria `fakty@5`: procedure 1.000, numeric_fact 0.875, penalty 0.857,
+      cross_document 0.833, **scope 0.625**.
+
+- [x] **Dywersyfikacja per dokument ODRZUCONA na podstawie pomiaru** (2026-07-27).
+      Diagnoza `penalty` sugerowała ograniczenie liczby chunków jednego dokumentu w top-5.
+      Symulacja na 48 pytaniach (cap to czysta obróbka listy po fuzji, więc mierzalna
+      bez zmiany kodu):
+
+| cap chunków/dokument | doc recall@5 | `fakty@5` |
+|---|---|---|
+| bez (obecne) | 0.938 | **0.840** |
+| 3 | 0.938 | 0.840 |
+| 2 | 0.938 | 0.840 |
+| 1 | **0.969** | **0.727** |
+
+      `cap=1` kupuje +0.031 recall@5 — dokładnie tyle, ile najlepszy cross-encoder za 43 s —
+      i **jednocześnie wyrzuca treść z odpowiedzią z kontekstu**: `fakty@5` spada o 0.113,
+      a traci każda kategoria (`numeric_fact` 0.875→0.72, `procedure` 1.000→0.83,
+      `scope` 0.625→0.50). Cap 2 i 3 są dokładnie neutralne, więc nie kupują nic.
+
+      **To jest wzorcowy przykład grania pod metrykę:** recall@k liczy RÓŻNE DOKUMENTY
+      w top-5, a cap mechanicznie zwiększa ich liczbę — poprawa jest częściowo
+      tautologiczna. Bez `fact_recall@k` zmiana zostałaby zaraportowana jako darmowy zysk
+      i cicho pogorszyła odpowiedzi. Nie wracaj do tego pomysłu bez pomiaru faktami.
 - [x] **Model referencyjny — ZMIERZONY** (2026-07-26). Klucz OpenRouter obsługuje modele
       płatne, więc osobny klucz OpenAI nie był potrzebny. `openai/gpt-4o-mini`, 56 pytań,
       ocena keyword-match, **koszt całego przebiegu 0.029 USD**.
