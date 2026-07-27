@@ -120,7 +120,9 @@ chunki mają tę samą flagę. Realna przyczyna to dense (MRR 0.352 na tej kateg
 - ~~Brak łańcucha fallbacku providerów~~ — **zrobione 2026-07-27** (Faza 3). Domyślnie
   wyłączony (`CHAT_FALLBACK_CHAIN` puste), bo repo jest publiczne; we wdrożeniu dla
   użytkownika końcowego wypełnia się go zgodnie z decyzją o płatnym modelu jako pierwszym
-- Brak jakiejkolwiek observability
+- ~~Brak jakiejkolwiek observability~~ — **zrobione 2026-07-27** (Faza 4): spany OTel
+  per etap, metryki Prometheusa na `/metrics`, logi z `trace_id`. Dashboard zostaje
+  poza repo, bo Grafana należy do klastra
 - Brak testów integracyjnych (`tests/integration`, `tests/e2e` są puste)
 - Darmowy model generacji: 17.3 s średnio i **6 pustych odpowiedzi na 21 pytań** (reasoning
   zjada budżet) — zmierzone w `run_015`. To nie jest „sporadycznie", to blisko co trzecie pytanie
@@ -672,15 +674,55 @@ z drugiego. `answer_score` ≥ baseline, `failure_stage=generation` maleje.
 
 ## Faza 4 — Observability
 
-- [ ] OpenTelemetry, spany per etap: `embed_query` → `dense_search` → `bm25_search` →
-      `rrf_fusion` → `rerank` → `generate`
-- [ ] Metryki Prometheus na `/metrics`: histogram latencji per etap, licznik błędów
-      per provider per kod, licznik przełączeń fallbacku, licznik odmów
-- [ ] Logi strukturalne JSON z `trace_id` spinającym jedno zapytanie
+- [x] **OpenTelemetry, spany per etap** (2026-07-27): `query` → `retrieve` →
+      `embed_query` / `dense_search` / `bm25_search` / `rrf_fusion` / `rerank`,
+      oraz `generate` → `llm_call` (span per PRÓBĘ, nie per zapytanie — przy fallbacku
+      ślad pokazuje, ile czasu zjadło ogniwo, które i tak zawiodło).
+      Eksporter konfigurowalny: `none` (domyślny — spany powstają, nigdzie nie lecą),
+      `console`, `otlp`. Brak kolektora nie może psuć aplikacji dla jednego użytkownika.
+- [x] **Metryki Prometheus na `/metrics`** (2026-07-27): histogram
+      `tsl_rag_stage_duration_seconds{stage}`, liczniki
+      `tsl_rag_provider_errors_total{provider,model,kind}`,
+      `tsl_rag_fallback_switches_total{from_target,to_target}`,
+      `tsl_rag_answers_total{outcome}` (answered / refused / all_providers_failed).
+      Kubełki histogramu dobrane pod ZMIERZONE latencje (do 60 s), nie domyślne do 10 s —
+      te wrzucałyby każdą generację na darmowym modelu do `+Inf`, czyli 15 s i 60 s
+      byłyby nierozróżnialne. Żadna etykieta nie zawiera treści zapytania ani `chunk_id`.
+- [x] **Logi strukturalne z `trace_id`** (2026-07-27), `LOG_JSON=true` → jedna linia
+      JSON na stdout. `trace_id` wchodzi przez `patcher` loguru, nie ręcznie w każdym
+      wywołaniu — inaczej jeden log bez identyfikatora zrywa ciągłość śladu dokładnie
+      tam, gdzie coś poszło nie tak. Przy okazji `LOG_LEVEL` w końcu cokolwiek robi:
+      istniał w `Settings`, ale nic go nie czytało.
 - [x] `/health` i `/ready` — zrobione w Fazie 0
-- [ ] Dashboard: latencja, error rate per provider, wykorzystanie darmowych limitów
+- [ ] Dashboard: latencja, error rate per provider, wykorzystanie darmowych limitów.
+      **Nie w tym repo** — Grafana należy do klastra, nie do aplikacji (§7)
 
-**Gate:** jedno zapytanie widoczne jako kompletny trace z rozbiciem czasu na etapy.
+**Gate: OSIĄGNIĘTY.** Jedno zapytanie widoczne jako kompletny ślad, wszystkie etapy
+w jednym `trace_id`, metryki obecne na `/metrics`.
+
+### Co pokazał pierwszy ślad — embedding to 89% latencji retrievalu
+
+Rozbicie na etapy było w tym projekcie niedostępne, więc te liczby są nowe:
+
+| etap | zimny start | rozgrzane |
+|---|---|---|
+| `embed_query` | **7673 ms** | **84 ms** |
+| `dense_search` | 52 ms | 7.6 ms |
+| `bm25_search` | 236 ms | 2.0 ms |
+| `rrf_fusion` | 0.0 ms | 0.0 ms |
+| **całość** | **7962 ms** | **94 ms** |
+
+Dwa wnioski:
+
+1. Na rozgrzanym procesie **embedding zapytania to ~89% latencji retrievalu**.
+   Deklarowane „retrieval trwa 0.1 s" jest prawdziwe, ale ta setna sekundy to
+   praktycznie w całości jeden model na CPU.
+2. **`warmup()` nie rozgrzewał modelu embeddingów** — ładował indeks BM25 i reranker
+   (wyłączony), a wagi e5 wczytywały się leniwie przy pierwszym zapytaniu użytkownika.
+   Docstring obiecywał, że pierwsze pytanie nie płaci za wczytanie modeli, i pomijał
+   dokładnie ten koszt, który dominuje. Naprawione: warmup liczy jeden wektor.
+   Ma to znaczenie dla Fazy 5, bo cold start na HF Spaces trafiał dotąd w pierwsze
+   pytanie użytkownika ośmioma sekundami.
 
 ---
 

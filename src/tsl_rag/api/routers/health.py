@@ -23,6 +23,7 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel
 
 from tsl_rag.core.embeddings import get_embedding_provider
+from tsl_rag.core.observability import metrics_payload
 from tsl_rag.core.settings import Settings, get_settings
 
 router = APIRouter(tags=["health"])
@@ -44,6 +45,18 @@ class ReadinessResponse(BaseModel):
 async def liveness() -> LivenessResponse:
     """Liveness: proces odpowiada. Bez odpytywania zależności."""
     return LivenessResponse(status="ok")
+
+
+@router.get("/metrics", include_in_schema=False)
+async def metrics() -> Response:
+    """
+    Metryki w formacie Prometheusa.
+
+    Poza schematem OpenAPI, bo to endpoint dla scrapera, nie dla klienta API —
+    w dokumentacji tylko zaśmiecałby listę operacji.
+    """
+    payload, content_type = metrics_payload()
+    return Response(content=payload, media_type=content_type)
 
 
 @router.get("/ready", response_model=ReadinessResponse)

@@ -162,6 +162,19 @@ class Settings(BaseSettings):
     # wysłane do modelu, który go nie zna, zostaje w promptcie jako śmieć.
     llm_system_prefix: str = ""
 
+    # --- Observability ---
+    # Domyślnie "none": spany powstają, ale nigdzie nie lecą. Aplikacja dla
+    # jednego użytkownika nie może wymagać działającego Jaegera do startu,
+    # a instrumentacja ma być w kodzie od początku, nie doklejana później
+    # (PLAN.md Faza 4). "console" służy do podejrzenia śladu bez kolektora.
+    otel_exporter: Literal["none", "console", "otlp"] = "none"
+    otel_endpoint: str = "http://localhost:4318/v1/traces"
+    otel_service_name: str = "tsl-rag"
+
+    # Logi jako JSON — wymagane, gdy logi zbiera agregator (stdout w K8s).
+    # W developmencie czytelniejszy jest format domyślny loguru.
+    log_json: bool = False
+
     postgres_dsn: PostgresDsn
 
     # --- Retrieval ---

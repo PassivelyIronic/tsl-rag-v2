@@ -131,6 +131,8 @@ uv sync                                                    # setup środowiska
 docker compose up -d                                       # Postgres + pgvector (host: 5433)
 uv run python -m tsl_rag.ingestion.cli ingest-all data/raw/ # ingest (oczekiwane: 13/14, 1 duplikat)
 uv run python -m tsl_rag.api.main                          # FastAPI na :8000
+# /health (liveness), /ready (readiness), /metrics (Prometheus)
+# Podgląd śladu bez kolektora: OTEL_EXPORTER=console; logi JSON: LOG_JSON=true
 uv run streamlit run ui.py                                 # UI (wymaga działającego API)
 uv run python -m evals.run_evals --output evals/results/run_XXX.json
 uv run python -m evals.run_evals --limit 21 --output ...  # podzbiór warstwowy, gdy limit providera

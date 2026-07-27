@@ -13,6 +13,7 @@ from tsl_rag.core.models import (
     RetrievalRequest,
     RetrievedChunk,
 )
+from tsl_rag.core.observability import stage
 from tsl_rag.core.settings import Settings, get_settings
 from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
@@ -111,26 +112,32 @@ async def query_rag(
         filter_contains_penalty=request.filter_contains_penalty,
     )
 
-    try:
-        results = await retriever.retrieve(retrieval_request)
-    except Exception as exc:
-        logger.error(f"Retrieval nieudany: {exc}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=_MSG_NOT_READY,
-        ) from exc
+    # Span nadrzędny dla całego zapytania. Bez niego retrieval i generacja
+    # trafiałyby do dwóch osobnych śladów, a `trace_id` w logach nie spinałby
+    # jednego pytania w całość — czyli bramka Fazy 4 nie byłaby spełniona.
+    # Długość zapytania zamiast jego treści: atrybut spanu z pytaniem
+    # użytkownika wyciekłby do kolektora razem z danymi, których nie musi znać.
+    with stage("query", query_length=len(request.query), debug=request.debug):
+        try:
+            results = await retriever.retrieve(retrieval_request)
+        except Exception as exc:
+            logger.error(f"Retrieval nieudany: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=_MSG_NOT_READY,
+            ) from exc
 
-    if not results:
-        logger.warning(f"Brak wyników retrievalu dla: '{request.query[:60]}'")
+        if not results:
+            logger.warning(f"Brak wyników retrievalu dla: '{request.query[:60]}'")
 
-    try:
-        response = await generator.generate(request.query, results)
-    except Exception as exc:
-        logger.error(f"Generacja nieudana ({settings.active_llm_model}): {exc}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=_MSG_GENERATION_FAILED,
-        ) from exc
+        try:
+            response = await generator.generate(request.query, results)
+        except Exception as exc:
+            logger.error(f"Generacja nieudana ({settings.active_llm_model}): {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=_MSG_GENERATION_FAILED,
+            ) from exc
 
     if request.debug:
         response.retrieved_chunks = [

@@ -8,6 +8,12 @@ from loguru import logger
 
 from tsl_rag.core.llm_client import ChatTarget, get_chat_client_for, resolve_chat_chain
 from tsl_rag.core.models import Citation, QueryResponse
+from tsl_rag.core.observability import (
+    record_answer,
+    record_fallback_switch,
+    record_provider_error,
+    stage,
+)
 from tsl_rag.core.settings import Settings, get_settings
 from tsl_rag.generation.fallback import CircuitBreaker, FailureKind, classify_failure
 from tsl_rag.retrieval.retriever import RetrievalResult
@@ -122,12 +128,22 @@ class RAGGenerator:
         ]
 
         chain = resolve_chat_chain(settings)
-        answer, has_answer, model_used, switches = await self._generate_with_fallback(
-            query, messages, chain, settings
-        )
+        with stage("generate", chain_length=len(chain)) as span:
+            answer, has_answer, model_used, switches = await self._generate_with_fallback(
+                query, messages, chain, settings
+            )
+            span.set_attribute("model_used", model_used)
+            span.set_attribute("fallback_switches", switches)
 
         latency_ms = int((time.monotonic() - t0) * 1000)
         citations = _extract_citations(answer, used_results)
+
+        if answer == _ALL_FAILED_MESSAGE:
+            record_answer("all_providers_failed")
+        elif has_answer:
+            record_answer("answered")
+        else:
+            record_answer("refused")
 
         logger.info(
             f"generate() → has_answer={has_answer}, model={model_used}, "
@@ -176,6 +192,7 @@ class RAGGenerator:
 
             if index > 0:
                 switches += 1
+                record_fallback_switch(str(chain[index - 1]), str(target))
                 logger.warning(
                     f"Fallback: przełączam na {target} "
                     f"(ogniwo {index + 1}/{len(chain)}, powód: {last_error})"
@@ -191,19 +208,26 @@ class RAGGenerator:
                 self._breaker.record_failure(str(target))
                 continue
 
+            # Span per PRÓBĘ, nie per zapytanie: przy fallbacku ślad ma pokazać,
+            # ile czasu zjadło ogniwo, które i tak zawiodło. To jest ta liczba,
+            # której brakuje przy diagnozowaniu "dlaczego odpowiedź szła minutę".
             try:
-                logger.debug(f"Wywołanie {target} dla zapytania: '{query[:80]}'")
-                response = await client.chat.completions.create(
-                    model=target.model,
-                    messages=messages,  # type: ignore[arg-type]
-                    temperature=settings.llm_temperature,
-                    max_tokens=settings.llm_max_tokens,
-                    **_reasoning_kwargs(settings, target.provider),
-                )
+                with stage(
+                    "llm_call", provider=target.provider, model=target.model, attempt=index + 1
+                ):
+                    logger.debug(f"Wywołanie {target} dla zapytania: '{query[:80]}'")
+                    response = await client.chat.completions.create(
+                        model=target.model,
+                        messages=messages,  # type: ignore[arg-type]
+                        temperature=settings.llm_temperature,
+                        max_tokens=settings.llm_max_tokens,
+                        **_reasoning_kwargs(settings, target.provider),
+                    )
             except Exception as exc:  # noqa: BLE001 — klasyfikujemy niżej
                 kind = classify_failure(exc)
                 last_error = f"{kind.value}: {type(exc).__name__}"
                 logger.error(f"Ogniwo {target} zawiodło [{kind.value}]: {str(exc)[:200]}")
+                record_provider_error(target.provider, target.model, kind.value)
                 self._breaker.record_failure(str(target))
                 continue
 
@@ -217,6 +241,7 @@ class RAGGenerator:
                     f"Ogniwo {target} zwróciło pustą treść "
                     f"(finish_reason={choice.finish_reason}, usage={usage})"
                 )
+                record_provider_error(target.provider, target.model, FailureKind.EMPTY.value)
                 self._breaker.record_failure(str(target))
                 continue
 

@@ -31,6 +31,7 @@ from tsl_rag.core.models import (
     LegalHierarchyLevel,
     RetrievalRequest,
 )
+from tsl_rag.core.observability import stage
 from tsl_rag.core.settings import get_settings
 from tsl_rag.retrieval.reranker import CrossEncoderReranker
 
@@ -147,14 +148,26 @@ class HybridRetriever:
         Buduje indeks BM25 i ładuje cross-encoder z wyprzedzeniem.
 
         Wołane raz w lifespanie API, żeby pierwsze zapytanie użytkownika
-        nie płaciło za wczytanie korpusu i modelu rerankera. Bez tego pierwsze
-        pytanie jest wyraźnie wolniejsze od kolejnych, co przy latencji
-        rzędu dwudziestu sekund jest różnicą odczuwalną.
+        nie płaciło za wczytanie korpusu i modeli.
+
+        Model embeddingów jest tu rozgrzewany JAWNIE, przez policzenie jednego
+        wektora. Zmierzone spanami (Faza 4): przy `embedding_provider=local`
+        pierwsze `embed_query` trwa 7.7 s, a kolejne 84 ms — bo wagi wczytują
+        się leniwie, przy pierwszym użyciu. Do wprowadzenia tracingu warmup
+        obiecywał w docstringu, że pierwsze pytanie nie płaci za wczytanie
+        modeli, a pomijał dokładnie ten koszt, który dominuje.
         """
         await self._check_embedding_model_matches_corpus()
         await self._ensure_bm25_index()
         if self._reranker:
             self._reranker.load()
+
+        try:
+            await get_embedding_provider().embed_query("rozgrzewka")
+        except Exception as exc:  # noqa: BLE001
+            # Rozgrzewka jest optymalizacją, nie warunkiem gotowości —
+            # o dostępności embeddingów orzeka /ready, nie start procesu.
+            logger.warning(f"Nie udało się rozgrzać modelu embeddingów: {exc}")
 
     async def _check_embedding_model_matches_corpus(self) -> None:
         """
@@ -209,53 +222,62 @@ class HybridRetriever:
         """
         settings = get_settings()
 
-        # 1. Embed query — embed_query, nie embed_documents: modele E5 wymagają
-        # innego prefiksu dla zapytania niż dla dokumentu.
-        query_embedding = await get_embedding_provider().embed_query(request.query)
+        with stage("retrieve", top_k=request.top_k):
+            # 1. Embed query — embed_query, nie embed_documents: modele E5 wymagają
+            # innego prefiksu dla zapytania niż dla dokumentu.
+            with stage("embed_query", provider=settings.embedding_provider):
+                query_embedding = await get_embedding_provider().embed_query(request.query)
 
-        # 2. Dense search (pgvector)
-        dense_results = await self._dense_search(
-            query_vector=query_embedding,
-            top_k=request.top_k,
-            filter_doc_ids=request.filter_document_ids,
-            filter_doc_type=request.filter_document_type,
-            filter_penalty=request.filter_contains_penalty,
-        )
+            # 2. Dense search (pgvector)
+            with stage("dense_search") as span:
+                dense_results = await self._dense_search(
+                    query_vector=query_embedding,
+                    top_k=request.top_k,
+                    filter_doc_ids=request.filter_document_ids,
+                    filter_doc_type=request.filter_document_type,
+                    filter_penalty=request.filter_contains_penalty,
+                )
+                span.set_attribute("results", len(dense_results))
 
-        # 3. BM25 search
-        bm25_results = await self._bm25_search(
-            query=request.query,
-            top_k=request.top_k,
-        )
+            # 3. BM25 search
+            with stage("bm25_search") as span:
+                bm25_results = await self._bm25_search(
+                    query=request.query,
+                    top_k=request.top_k,
+                )
+                span.set_attribute("results", len(bm25_results))
 
-        # 4. RRF fusion (ważony — wagi z Settings)
-        fused = _reciprocal_rank_fusion(
-            dense_results,
-            bm25_results,
-            k=settings.rrf_k,
-            dense_weight=settings.dense_weight,
-            bm25_weight=settings.bm25_weight,
-        )
+            # 4. RRF fusion (ważony — wagi z Settings)
+            with stage("rrf_fusion", rrf_k=settings.rrf_k) as span:
+                fused = _reciprocal_rank_fusion(
+                    dense_results,
+                    bm25_results,
+                    k=settings.rrf_k,
+                    dense_weight=settings.dense_weight,
+                    bm25_weight=settings.bm25_weight,
+                )
+                span.set_attribute("results", len(fused))
 
-        # Bierzemy top_k po fuzji jako pulę kandydatów
-        candidates = fused[: request.top_k]
+            # Bierzemy top_k po fuzji jako pulę kandydatów
+            candidates = fused[: request.top_k]
 
-        # 5. Cross-encoder rerank — opcjonalny, domyślnie wyłączony (patrz
-        # tabela pomiarów w PLAN.md Faza 1: kosztuje całość latencji retrievalu
-        # i przy dostępnych modelach albo szkodzi, albo kupuje +0.031 recall@5
-        # za 43 sekundy).
-        if candidates and self._reranker:
-            candidates = self._apply_rerank(
-                query=request.query,
-                results=candidates,
-                top_n=request.rerank_top_n,
-            )
-        else:
-            # Bez rerankera lista MUSI zostać przycięta tutaj. Wcześniej robił
-            # to wyłącznie reranker przez top_n, więc po jego wyłączeniu do
-            # kontekstu poszłoby top_k (20) chunków zamiast rerank_top_n (5) —
-            # cichy wzrost zużycia kontekstu i kosztu generacji.
-            candidates = candidates[: request.rerank_top_n]
+            # 5. Cross-encoder rerank — opcjonalny, domyślnie wyłączony (patrz
+            # tabela pomiarów w PLAN.md Faza 1: kosztuje całość latencji retrievalu
+            # i przy dostępnych modelach albo szkodzi, albo kupuje +0.031 recall@5
+            # za 43 sekundy).
+            with stage("rerank", enabled=bool(self._reranker)):
+                if candidates and self._reranker:
+                    candidates = self._apply_rerank(
+                        query=request.query,
+                        results=candidates,
+                        top_n=request.rerank_top_n,
+                    )
+                else:
+                    # Bez rerankera lista MUSI zostać przycięta tutaj. Wcześniej robił
+                    # to wyłącznie reranker przez top_n, więc po jego wyłączeniu do
+                    # kontekstu poszłoby top_k (20) chunków zamiast rerank_top_n (5) —
+                    # cichy wzrost zużycia kontekstu i kosztu generacji.
+                    candidates = candidates[: request.rerank_top_n]
 
         logger.info(
             f"retrieve('{request.query[:60]}...') → "
