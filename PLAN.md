@@ -157,7 +157,13 @@ Kolejność, w mojej ocenie:
      --output evals/results/run_016_nemotron21_nothink.json
    ```
 
-   Porównanie z `run_015_nemotron21_baseline.json` (te same 21 pytań, dobór warstwowy).
+   **UWAGA — `run_015` przestał być ważnym punktem odniesienia.** Powstał przy `rrf_k = 60`,
+   a tego samego dnia stała zmieniła się na 5 (recall@5 0.938 → 0.958, `fakty@5` 0.840 →
+   0.882). Porównanie jutrzejszego `/no_think` z `run_015` mieszałoby dwie zmiany naraz:
+   prefiks systemowy i inny retrieval. **Trzeba przebiec OBA warianty od nowa**, 21+21 = 42
+   wywołania, co mieści się w dziennym limicie 50. `run_015` zostaje w repo jako pomiar
+   latencji i pustych odpowiedzi przy `k=60`, nie jako baseline dla prefiksu.
+
    `Settings` odrzuca dziś zmangowaną wartość wyjątkiem, więc pomyłka się nie powtórzy cicho.
 4. **Faza 3: łańcuch fallbacku** z płatnym modelem jako pierwszym ogniwem (decyzja niżej).
 

@@ -15,23 +15,31 @@
 #
 # Skąd wzięte wartości
 # --------------------
-# Pomiar odniesienia: evals/results/retrieval_009_norerank_bm25_0.5.json
-# (multilingual-e5-base, BM25+dense 0.5/0.5, reranking wyłączony, 48 pytań):
+# Pomiar odniesienia: evals/results/retrieval_012_rrf_k5.json
+# (multilingual-e5-base, BM25+dense 0.5/0.5, rrf_k = 5, reranking wyłączony,
+# 48 pytań):
 #
-#   recall@5  = 0.938    recall@10 = 0.969    recall@20 = 1.000    MRR = 0.874
+#   recall@5 = 0.958   recall@10 = 0.969   recall@20 = 1.000   MRR = 0.874
+#   fakty@5  = 0.882   fakty@20  = 0.951
 #
 # Margines: jedno pytanie z 48 to 0.021. Progi stoją o mniej więcej tyle poniżej
 # pomiaru, więc pojedyncze przesunięcie granicy chunka nie wywala bramki, ale
 # każda realna regresja już tak. Retrieval jest deterministyczny, więc margines
 # nie musi pokrywać szumu — pokrywa wyłącznie drobne skutki uboczne zmian
 # w parserze albo chunkerze.
+#
+# PODNIESIENIE progu recall@5 z 0.917 na 0.938 (2026-07-27) jest konsekwencją
+# zmiany rrf_k 60 → 5, która podniosła pomiar 0.938 → 0.958. Zasada #1 zakazuje
+# OBNIŻANIA progu pod przebieg; zostawienie progu zaniżonego po zweryfikowanej
+# poprawie jest tym samym problemem od drugiej strony — bramka przepuszczałaby
+# wtedy cichy powrót do gorszego rankingu.
 
 version: 1
 
 retrieval:
   # Czy właściwy dokument trafia do kontekstu. Metryka główna: przy
   # rerank_top_n = 5 to dokładnie tyle chunków widzi model generujący.
-  min_recall_at_5: 0.917
+  min_recall_at_5: 0.938
 
   # Zapas na wypadek podniesienia rerank_top_n albo powrotu rerankingu.
   min_recall_at_10: 0.948
@@ -48,9 +56,22 @@ observed_only:
   per_category_recall_at_5:
     numeric_fact: 1.000
     procedure: 1.000
-    scope: 0.875
+    scope: 1.000
     cross_document: 0.857
     penalty: 0.857
+
+  # Ile oczekiwanych faktów stoi w TREŚCI pobranych chunków (retrieval_012).
+  # Recall dokumentowy mówi tylko, że wszedł właściwy AKT — ta metryka pilnuje,
+  # czy wszedł właściwy PRZEPIS, i to ona wyłapała, że dywersyfikacja per
+  # dokument podnosi recall, wyrzucając z kontekstu chunk z odpowiedzią.
+  # Obserwowana, nie bramkująca: jest nowa i nie ma jeszcze historii przebiegów.
+  per_category_fact_recall_at_5:
+    procedure: 1.000
+    numeric_fact: 0.925
+    penalty: 0.857
+    cross_document: 0.833
+    scope: 0.750
+  fact_recall_at_5_overall: 0.882
 
 # Metryki generacji — świadomie NIE bramkują (patrz nagłówek). Wartości
 # zapisane jako punkt odniesienia z datasetu v1 (15 pytań); po rozszerzeniu
