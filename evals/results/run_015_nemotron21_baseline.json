@@ -1,0 +1,933 @@
+{
+  "summary": {
+    "total_questions": 21,
+    "measured_questions": 21,
+    "errors": 0,
+    "avg_answer_score": 0.508,
+    "avg_semantic_score": 0.77,
+    "avg_citation_hit_rate": 0.786,
+    "avg_citation_precision": 0.81,
+    "avg_retrieval_recall": 0.929,
+    "failure_stages": {
+      "generation": 3,
+      "retrieval": 1,
+      "generation_partial": 1
+    },
+    "avg_latency_ms": 17295,
+    "refusal_precision": 1.0,
+    "false_refusal_rate": 0.118,
+    "per_category": {
+      "numeric_fact": {
+        "count": 4,
+        "avg_answer_score": 0.375,
+        "avg_semantic_score": 0.375,
+        "avg_citation_hit": 0.75,
+        "avg_citation_precision": 0.75,
+        "avg_retrieval_recall": 1.0
+      },
+      "procedure": {
+        "count": 3,
+        "avg_answer_score": 0.278,
+        "avg_semantic_score": 0.667,
+        "avg_citation_hit": 0.667,
+        "avg_citation_precision": 1.0,
+        "avg_retrieval_recall": 1.0
+      },
+      "scope": {
+        "count": 3,
+        "avg_answer_score": 0.444,
+        "avg_semantic_score": 0.889,
+        "avg_citation_hit": 1.0,
+        "avg_citation_precision": 1.0,
+        "avg_retrieval_recall": 1.0
+      },
+      "penalty": {
+        "count": 3,
+        "avg_answer_score": 0.5,
+        "avg_semantic_score": 0.833,
+        "avg_citation_hit": 0.667,
+        "avg_citation_precision": 0.667,
+        "avg_retrieval_recall": 0.667
+      },
+      "cross_document": {
+        "count": 4,
+        "avg_answer_score": 0.375,
+        "avg_semantic_score": 0.875,
+        "avg_citation_hit": 0.625,
+        "avg_citation_precision": 1.0,
+        "avg_retrieval_recall": 0.875
+      },
+      "out_of_scope": {
+        "count": 4,
+        "avg_answer_score": 1.0,
+        "avg_semantic_score": 1.0,
+        "avg_citation_hit": 1.0,
+        "avg_citation_precision": 0.5,
+        "avg_retrieval_recall": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "ec-561-max-daily-drive-std",
+      "question": "Jaki jest maksymalny dzienny czas prowadzenia pojazdu?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.0,
+      "semantic_score": 0.0,
+      "semantic_per_fact": [
+        {
+          "fact": "nie może przekroczyć 9 godzin",
+          "similarity": 0.883,
+          "present": false,
+          "kind": "liczbowy"
+        },
+        {
+          "fact": "nie więcej niż 10 godzin",
+          "similarity": 0.884,
+          "present": false,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 19937,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "retrieved_docs": [
+        "aetr",
+        "ec_561_2006",
+        "eu_2020_1054",
+        "tariff_company_2022"
+      ],
+      "judge_reasoning": null,
+      "answer": "Maksymalny dzienny czas prowadzenia pojazdu wynosi 9 godzin, jednak może zostać przedłużony do 10 godzin maksymalnie dwa razy w tygodniu. [ec_561_2006 | Art. 6(1)]"
+    },
+    {
+      "id": "ec-561-max-daily-drive-bo",
+      "question": "Jaki jest maks dzienny czas jazdy",
+      "category": "numeric_fact",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.5,
+      "semantic_score": 0.5,
+      "semantic_per_fact": [
+        {
+          "fact": "nie może przekroczyć 9 godzin",
+          "similarity": 0.938,
+          "present": true,
+          "kind": "liczbowy"
+        },
+        {
+          "fact": "nie więcej niż 10 godzin",
+          "similarity": 0.905,
+          "present": false,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 11343,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "retrieved_docs": [
+        "ec_561_2006",
+        "eu_2020_1054",
+        "tariff_driver_2022"
+      ],
+      "judge_reasoning": null,
+      "answer": "Maksymalny dzienny czas jazdy nie może przekroczyć 9 godzin. [ec_561_2006 | Art. 6(1)]"
+    },
+    {
+      "id": "ec-561-max-daily-drive-pot",
+      "question": "Ile najdłużej mogę jechać w jeden dzień za kółkiem?",
+      "category": "numeric_fact",
+      "variant": "potoczne",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.0,
+      "semantic_score": 0.0,
+      "semantic_per_fact": [
+        {
+          "fact": "nie może przekroczyć 9 godzin",
+          "similarity": 0.897,
+          "present": false,
+          "kind": "liczbowy"
+        },
+        {
+          "fact": "nie więcej niż 10 godzin",
+          "similarity": 0.876,
+          "present": false,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 0.0,
+      "citation_precision": 0.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": "generation",
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 13375,
+      "cited_docs": [
+        "aetr"
+      ],
+      "retrieved_docs": [
+        "aetr",
+        "ec_561_2006",
+        "eu_2020_1054",
+        "tariff_company_2022"
+      ],
+      "judge_reasoning": null,
+      "answer": "Najdłużej możesz jechać w jeden dzień za kółkiem 9 godzin. [aetr | Art. Artykuł 6(1)]"
+    },
+    {
+      "id": "ec-561-two-weeks-drive-std",
+      "question": "Jaki jest dopuszczalny łączny czas prowadzenia pojazdu w ciągu dwóch kolejnych tygodni?",
+      "category": "numeric_fact",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 1.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "nie może przekroczyć 90 godzin",
+          "similarity": 0.91,
+          "present": true,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 6218,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "retrieved_docs": [
+        "aetr",
+        "ec_561_2006"
+      ],
+      "judge_reasoning": null,
+      "answer": "Dopuszczalny łączny czas prowadzenia pojazdu w ciągu dwóch kolejnych tygodni nie może przekroczyć 90 godzin. [ec_561_2006 | Art. 6, ust. 3]"
+    },
+    {
+      "id": "ec-561-multi-crew-break-std",
+      "question": "Pod jakimi warunkami kierowca w załodze kilkuosobowej może odebrać przerwę w jadącym pojeździe?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006"
+      ],
+      "answer_score": 0.5,
+      "semantic_score": 0.5,
+      "semantic_per_fact": [
+        {
+          "fact": "nie jest zaangażowany w pomoc",
+          "similarity": 0.822,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "wykorzystać przerwę trwającą 45 minut",
+          "similarity": 0.882,
+          "present": false,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 12641,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "retrieved_docs": [
+        "aetr",
+        "ec_561_2006"
+      ],
+      "judge_reasoning": null,
+      "answer": "Kierowca w załodze kilkuosobowej może odebrać przerwę trwającą 45 minut w pojeździe kierowanym przez innego kierowcę, pod warunkiem, że nie jest zaangażowany w pomoc kierowcy prowadzącemu pojazd. [ec_561_2006 | Art. 7, M3]"
+    },
+    {
+      "id": "dir-2002-60-hours-cond-std",
+      "question": "Pod jakimi warunkami tygodniowy czas pracy pracownika może zostać wydłużony do 60 godzin?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "directive_2002_15"
+      ],
+      "answer_score": 0.0,
+      "semantic_score": 0.5,
+      "semantic_per_fact": [
+        {
+          "fact": "w ciągu czterech miesięcy",
+          "similarity": 0.856,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "nie została przekroczona średnia 48 godzin",
+          "similarity": 0.848,
+          "present": false,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 0.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": "generation",
+      "has_answer": false,
+      "correctly_refused": false,
+      "incorrectly_refused": true,
+      "latency_ms": 25312,
+      "cited_docs": [],
+      "retrieved_docs": [
+        "aetr",
+        "directive_2002_15",
+        "ec_561_2006",
+        "pl_driver_hours_act"
+      ],
+      "judge_reasoning": null,
+      "answer": "Nie udało się przygotować odpowiedzi — model językowy zwrócił pustą treść. Spróbuj zadać pytanie jeszcze raz, najlepiej krócej."
+    },
+    {
+      "id": "eu-165-damaged-card-proc-std",
+      "question": "Co musi zrobić kierowca na początku trasy w przypadku uszkodzenia karty kierowcy?",
+      "category": "procedure",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_165_2014"
+      ],
+      "answer_score": 0.333,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "drukuje dane",
+          "similarity": 0.838,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "identyfikację kierowcy",
+          "similarity": 0.894,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "wraz z podpisem",
+          "similarity": 0.863,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 32359,
+      "cited_docs": [
+        "eu_165_2014"
+      ],
+      "retrieved_docs": [
+        "aetr",
+        "eu_165_2014"
+      ],
+      "judge_reasoning": null,
+      "answer": "W przypadku uszkodzenia karty kierowcy, na początku trasy kierowca musi wydrukować dane pojazdu i w nim wpisać dane umożliwiające identyfikację kierowcy (nazwisko, numer karty kierowcy lub prawa jazdy), wraz ze swoim podpisem. [eu_165_2014 | Art. 35, ust. 2a)]"
+    },
+    {
+      "id": "eu-1071-scope-2-5-tons-std",
+      "question": "Czy przepisy rozporządzenia 1071/2009 mają zastosowanie do firm wykonujących przewozy rzeczy pojazdami o masie całkowitej do 2,5 tony?",
+      "category": "scope",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_1071_2009"
+      ],
+      "answer_score": 0.333,
+      "semantic_score": 0.667,
+      "semantic_per_fact": [
+        {
+          "fact": "nie ma zastosowania do",
+          "similarity": 0.867,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "nie przekracza 2",
+          "similarity": 0.882,
+          "present": false,
+          "kind": "liczbowy"
+        },
+        {
+          "fact": "5 tony",
+          "similarity": 0.829,
+          "present": true,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 16468,
+      "cited_docs": [
+        "eu_1071_2009"
+      ],
+      "retrieved_docs": [
+        "ec_561_2006",
+        "eu_1071_2009",
+        "eu_165_2014",
+        "eu_2020_1054"
+      ],
+      "judge_reasoning": null,
+      "answer": "Nie, przepisy rozporządzenia (WE) nr 1071/2009 nie mają zastosowania do firm wykonujących przewozy rzeczy pojazdami o dopuszczalnej masie całkowitej do 2,5 tony. Zgodnie z art. 1 ust. 4aa rozporządzenia (WE) 1071/2009, przedmiotem stosowania rozporządzenia są przedsiębiorcy, którzy wykonują zawód przewoźnika drogowego, z wyjątkiem tych, którzy korzystają wyłącznie z pojazdów o dopuszczalnej masie nieprzekraczającej 2,5 tony [eu_1071_2009 | Art. 1, ust. 4aa]."
+    },
+    {
+      "id": "eu-1072-cabotage-def-std",
+      "question": "Jak brzmi definicja przewozu kabotażowego w rozporządzeniu o dostępie do rynku przewozów?",
+      "category": "scope",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "answer_score": 0.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "krajowy zarobkowy przewóz",
+          "similarity": 0.838,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "wykonywany tymczasowo w przyjmującym państwie członkowskim",
+          "similarity": 0.827,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 18671,
+      "cited_docs": [
+        "eu_1072_2009"
+      ],
+      "retrieved_docs": [
+        "eu_1072_2009",
+        "eu_2020_1054"
+      ],
+      "judge_reasoning": null,
+      "answer": "Definicja przewozu kabotażowego w rozporządzeniu (WE) nr 1072/2009 brzmi: „Każdy przewoźnik zarobkowego drogowego przewozu rzeczy posiadający licencję wspólnotową, którego kierowca, jeśli jest obywatelem państwa trzeciego, posiada świadectwo kierowcy, jest uprawniony na warunkach określonych w niniejszym rozdziale do wykonywania przewozów kabotażowych” [eu_1072_2009 | Art. 8 ust. 1]."
+    },
+    {
+      "id": "eu-1072-cabotage-def-bo",
+      "question": "Co to jest przewoz kabotazowy",
+      "category": "scope",
+      "variant": "bez_ogonkow",
+      "expected_docs": [
+        "eu_1072_2009"
+      ],
+      "answer_score": 1.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "krajowy zarobkowy przewóz",
+          "similarity": 0.871,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "wykonywany tymczasowo w przyjmującym państwie członkowskim",
+          "similarity": 0.853,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 17500,
+      "cited_docs": [
+        "eu_1072_2009"
+      ],
+      "retrieved_docs": [
+        "directive_2020_1057",
+        "eu_1072_2009"
+      ],
+      "judge_reasoning": null,
+      "answer": "Przewóz kabotażowy to krajowy zarobkowy przewóz wykonywany tymczasowo w przyjmującym państwie członkowskim zgodnie z rozporządzeniem [eu_1072_2009 | Art. 2.6]."
+    },
+    {
+      "id": "eu-2016-false-card-pen-std",
+      "question": "Jak kwalifikowane jest posługiwanie się przez kierowcę kartą kierowcy, która nie jest jego własną kartą?",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "answer_score": 0.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "najpoważniejsze naruszenia",
+          "similarity": 0.806,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "nn",
+          "similarity": 0.845,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 9687,
+      "cited_docs": [
+        "eu_2016_403"
+      ],
+      "retrieved_docs": [
+        "aetr",
+        "eu_165_2014",
+        "eu_2016_403"
+      ],
+      "judge_reasoning": null,
+      "answer": "Posługiwanie się przez kierowcę kartą kierowcy, która nie jest jego własną kartą, jest uznawane za naruszenie przepisów i kwalifikowane jako prowadzenie pojazdu bez karty kierowcy. [eu_2016_403 | Art. 3]"
+    },
+    {
+      "id": "eu-2016-false-card-pen-pot",
+      "question": "Co mi wpiszą w papiery jak mnie złapią na jeździe na nie swojej karcie?",
+      "category": "penalty",
+      "variant": "potoczne",
+      "expected_docs": [
+        "eu_2016_403"
+      ],
+      "answer_score": 0.5,
+      "semantic_score": 0.5,
+      "semantic_per_fact": [
+        {
+          "fact": "najpoważniejsze naruszenia",
+          "similarity": 0.799,
+          "present": false,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "nn",
+          "similarity": 0.862,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 0.0,
+      "citation_precision": 0.0,
+      "retrieval_recall": 0.0,
+      "failure_stage": "retrieval",
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 15031,
+      "cited_docs": [
+        "eu_165_2014"
+      ],
+      "retrieved_docs": [
+        "eu_165_2014"
+      ],
+      "judge_reasoning": null,
+      "answer": "Jeśli zostanie złapany na jeździe na nie swojej karcie kierowcy, kierowca będzie musiał w papierach (np. wykresówkach lub wydrukach) wpisać dane umożliwiające identyfikację (nazwisko, numer karty kierowcy lub prawa jazdy) oraz podpis, zgodnie z wymaganiami art. 35 ust. 2 lit. b) oraz art. 37 ust. 2. Ponadto, w przypadku wykorzystania karta innej osoby, może być wymagane przedstawienie dodatkowych dowodów potwierdzających, że dane w rejestrze nie są fałszywe, co jest zabronione zgodnie z art. 32 ust. 4.  \n[eu_165_2014 | Art. 32 ust. 4]  \n[eu_165_2014 | Art. 35 ust. 2 lit. b)]"
+    },
+    {
+      "id": "tariff-drv-no-license-extract-std",
+      "question": "Jaka jest wysokość grzywny nakładanej na kierowcę za nieokazanie podczas kontroli wypisu z licencji?",
+      "category": "penalty",
+      "variant": "standard",
+      "expected_docs": [
+        "tariff_driver_2022"
+      ],
+      "answer_score": 1.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "200",
+          "similarity": 0.828,
+          "present": true,
+          "kind": "liczbowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 16891,
+      "cited_docs": [
+        "tariff_driver_2022"
+      ],
+      "retrieved_docs": [
+        "eu_1072_2009",
+        "tariff_company_2022",
+        "tariff_driver_2022",
+        "tariff_manager_2022"
+      ],
+      "judge_reasoning": null,
+      "answer": "Dzienny czas jazdy nie może przekroczyć 9 godzin. [ec_561_2006 | Art. 6]  \nNieokazanie wypisu z licencji podczas kontroli wiąże się z grzywną w wysokości 200 zł. [tariff_driver_2022 | 1.2]"
+    },
+    {
+      "id": "cross-ec-561-dir-2002-std",
+      "question": "Jak maksymalny tygodniowy czas prowadzenia pojazdu ma się do maksymalnego tygodniowego czasu pracy kierowcy w UE?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006",
+        "directive_2002_15"
+      ],
+      "answer_score": 0.5,
+      "semantic_score": 0.5,
+      "semantic_per_fact": [
+        {
+          "fact": "nie może przekroczyć 56 godzin",
+          "similarity": 0.887,
+          "present": false,
+          "kind": "liczbowy"
+        },
+        {
+          "fact": "maksymalnego tygodniowego czasu pracy",
+          "similarity": 0.874,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 17312,
+      "cited_docs": [
+        "directive_2002_15",
+        "ec_561_2006"
+      ],
+      "retrieved_docs": [
+        "directive_2002_15",
+        "directive_2020_1057",
+        "ec_561_2006",
+        "eu_2020_1054"
+      ],
+      "judge_reasoning": null,
+      "answer": "Maksymalny tygodniowy czas prowadzenia pojazdu (56 godzin) nie może przekroczyć maksymalnego tygodniowego czasu pracy kierowcy ustalonego w dyrektywie 2002/15/WE. [ec_561_2006 | Art. 6(2)]  \nDyrektywa 2002/15/WE pozwala na przedłużenie maksymalnego tygodniowego czasu pracy do 60 godzin, ale tylko w przypadku, gdy średnia czas pracy w ciągu czterech miesięcy nie przekracza 48 godzin. [directive_2002_15 | Art. 4(a)]"
+    },
+    {
+      "id": "cross-ec-561-eu-2020-1054-std",
+      "question": "Gdzie kierowca musi spędzać regularny tygodniowy okres odpoczynku po zmianach wprowadzonych przez Pakiet Mobilności?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006",
+        "eu_2020_1054"
+      ],
+      "answer_score": 0.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "nie mogą być wykorzystywane w pojeździe",
+          "similarity": 0.838,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "w odpowiednim dla każdej płci miejscu zakwaterowania",
+          "similarity": 0.846,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 0.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": "generation",
+      "has_answer": false,
+      "correctly_refused": false,
+      "incorrectly_refused": true,
+      "latency_ms": 39280,
+      "cited_docs": [],
+      "retrieved_docs": [
+        "aetr",
+        "ec_561_2006",
+        "eu_2020_1054"
+      ],
+      "judge_reasoning": null,
+      "answer": "Nie udało się przygotować odpowiedzi — model językowy zwrócił pustą treść. Spróbuj zadać pytanie jeszcze raz, najlepiej krócej."
+    },
+    {
+      "id": "cross-ec-561-aetr-std",
+      "question": "Które przepisy należy stosować do przejazdu rozpoczynającego się w Unii Europejskiej a kończącego w państwie będącym stroną umowy AETR?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "ec_561_2006",
+        "aetr"
+      ],
+      "answer_score": 0.5,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "aetr stosuje się",
+          "similarity": 0.817,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "w miejsce niniejszego rozporządzenia",
+          "similarity": 0.828,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 0.5,
+      "citation_precision": 1.0,
+      "retrieval_recall": 0.5,
+      "failure_stage": "generation_partial",
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 31233,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "retrieved_docs": [
+        "directive_2002_15",
+        "directive_2020_1057",
+        "ec_561_2006",
+        "eu_2020_1054",
+        "pl_driver_hours_act"
+      ],
+      "judge_reasoning": null,
+      "answer": "Dla przejazdu rozpoczynającego się w Unii Europejskiej a kończącego w państwie będącym stroną umowy AETR stosuje się przepisy rozporządzenia (EC) nr 561/2006 dla odcinka trasy w UE oraz przepisy AETR dla odcinka trasy w państwie trzecim. [ec_561_2006 | Art. 2] i [ec_561_2006 | Art. 3]"
+    },
+    {
+      "id": "cross-eu-165-eu-2020-1054-std",
+      "question": "W jaki sposób kierowca pojazdu z tachografem analogowym musi rejestrować przekroczenie granicy państwa członkowskiego po zmianach?",
+      "category": "cross_document",
+      "variant": "standard",
+      "expected_docs": [
+        "eu_165_2014",
+        "eu_2020_1054"
+      ],
+      "answer_score": 0.5,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [
+        {
+          "fact": "na początku pierwszego postoju",
+          "similarity": 0.843,
+          "present": true,
+          "kind": "opisowy"
+        },
+        {
+          "fact": "na granicy lub po jej przekroczeniu",
+          "similarity": 0.868,
+          "present": true,
+          "kind": "opisowy"
+        }
+      ],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": true,
+      "correctly_refused": false,
+      "incorrectly_refused": false,
+      "latency_ms": 14985,
+      "cited_docs": [
+        "eu_165_2014",
+        "eu_2020_1054"
+      ],
+      "retrieved_docs": [
+        "directive_2020_1057",
+        "eu_165_2014",
+        "eu_2020_1054"
+      ],
+      "judge_reasoning": null,
+      "answer": "Kierowca pojazdu z tachografem analogowym musi ręcznie rejestrować przekroczenie granicy państwa członkowskiego na najbliższym możliwym miejscu postoju na granicy lub po jej przekroczeniu. [eu_2020_1054 | Art. 2, ust. 29] oraz [eu_165_2014 | Art. 34, ust. 7]."
+    },
+    {
+      "id": "out-of-scope-speed-ticket-std",
+      "question": "Jaka jest wysokość mandatu za przekroczenie prędkości o 30 km/h na autostradzie w Niemczech w 2023 roku?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_docs": [],
+      "answer_score": 1.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": false,
+      "correctly_refused": true,
+      "incorrectly_refused": false,
+      "latency_ms": 10827,
+      "cited_docs": [],
+      "retrieved_docs": [
+        "directive_2020_1057",
+        "eu_1071_2009",
+        "eu_165_2014",
+        "tariff_company_2022"
+      ],
+      "judge_reasoning": "out_of_scope: odmowa poprawna",
+      "answer": "Nie mogę odpowiedzieć na to pytanie na podstawie dostępnych dokumentów."
+    },
+    {
+      "id": "out-of-scope-minimum-wage-std",
+      "question": "Ile wynosi aktualna płaca minimalna dla kierowcy zawodowego delegowanego do Francji?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_docs": [],
+      "answer_score": 1.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 0.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": false,
+      "correctly_refused": true,
+      "incorrectly_refused": false,
+      "latency_ms": 12750,
+      "cited_docs": [
+        "directive_2020_1057"
+      ],
+      "retrieved_docs": [
+        "directive_2020_1057",
+        "ec_561_2006",
+        "eu_165_2014"
+      ],
+      "judge_reasoning": "out_of_scope: odmowa poprawna",
+      "answer": "Nie mogę odpowiedzieć na to pytanie na podstawie dostępnych dokumentów. W podanym kontekście nie ma informacji o konkretnej kwocie minimalnej płacy dla kierowcy zawodowego delegowanego do Francji. Dokumenty odnoszą się jedynie do wymagań dotyczących przejrzystości i dostępności informacji o wynagrodzeniu, ale nie ustalają konkretnych wartości. [directive_2020_1057 | Art. 1]"
+    },
+    {
+      "id": "out-of-scope-customs-std",
+      "question": "Jakie procedury celne i deklaracje są wymagane podczas przewozu towarów pomiędzy Polską a Wielką Brytanią po Brexicie?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_docs": [],
+      "answer_score": 1.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 1.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": false,
+      "correctly_refused": true,
+      "incorrectly_refused": false,
+      "latency_ms": 10156,
+      "cited_docs": [],
+      "retrieved_docs": [
+        "directive_2020_1057",
+        "eu_1071_2009",
+        "eu_2016_403",
+        "tariff_driver_2022"
+      ],
+      "judge_reasoning": "out_of_scope: odmowa poprawna",
+      "answer": "Nie mogę odpowiedzieć na to pytanie na podstawie dostępnych dokumentów. Kontekst zawiera przepisy dotyczące transportu drogowego, dokumentacji przewozowej, kwalifikacji kierowców oraz specyficznych wymogów dla przewozu zwierząt i towarów niebezpiecznych, ale nie zawiera informacji o procedurach celnych ani deklaracjach wymaganych po Brexicie w przypadku przewozu między Polską a Wielką Brytanią."
+    },
+    {
+      "id": "out-of-scope-adr-training-std",
+      "question": "Gdzie w Polsce można zapisać się na specjalistyczny kurs na przewóz materiałów wybuchowych klasy 1 (ADR) i ile to kosztuje?",
+      "category": "out_of_scope",
+      "variant": "standard",
+      "expected_docs": [],
+      "answer_score": 1.0,
+      "semantic_score": 1.0,
+      "semantic_per_fact": [],
+      "citation_hit_rate": 1.0,
+      "citation_precision": 0.0,
+      "retrieval_recall": 1.0,
+      "failure_stage": null,
+      "has_answer": false,
+      "correctly_refused": true,
+      "incorrectly_refused": false,
+      "latency_ms": 11218,
+      "cited_docs": [
+        "ec_561_2006"
+      ],
+      "retrieved_docs": [
+        "aetr",
+        "ec_561_2006",
+        "eu_2016_403",
+        "eu_2020_1054"
+      ],
+      "judge_reasoning": "out_of_scope: odmowa poprawna",
+      "answer": "Nie mogę odpowiedzieć na to pytanie na podstawie dostępnych dokumentów. [ec_561_2006 | Art. 3]"
+    }
+  ],
+  "judge_model": "keyword_match",
+  "config": {
+    "embedding_provider": "local",
+    "embedding_model": "intfloat/multilingual-e5-base",
+    "chat_provider": "openrouter",
+    "chat_model": "nvidia/nemotron-nano-9b-v2:free",
+    "llm_max_tokens": 1024,
+    "llm_reasoning_effort": "",
+    "llm_system_prefix": "",
+    "retrieval_top_k": 20,
+    "retrieval_rerank_top_n": 5,
+    "bm25_weight": 0.5,
+    "dense_weight": 0.5,
+    "reranker_model": "BAAI/bge-reranker-v2-m3",
+    "max_context_chars": 12000
+  }
+}

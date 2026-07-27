@@ -55,6 +55,20 @@ def _reasoning_kwargs(settings: Settings) -> dict:
     return {"reasoning_effort": effort}
 
 
+def _system_prompt(settings: Settings) -> str:
+    """
+    System prompt z opcjonalnym prefiksem sterującym z konfiguracji.
+
+    Prefiks jest osobną linią przed promptem, bo modele z rodziny Nemotron
+    oczekują `/no_think` jako samodzielnego tokenu na początku wiadomości
+    systemowej — wklejony w środek zdania przestaje działać.
+    """
+    prefix = settings.llm_system_prefix.strip()
+    if not prefix:
+        return SYSTEM_PROMPT
+    return f"{prefix}\n{SYSTEM_PROMPT}"
+
+
 class RAGGenerator:
     """
     Generuje odpowiedź na podstawie pytania i listy RetrievalResult.
@@ -82,7 +96,7 @@ class RAGGenerator:
         response = await client.chat.completions.create(
             model=settings.active_llm_model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": _system_prompt(settings)},
                 {"role": "user", "content": user_message},
             ],
             temperature=settings.llm_temperature,

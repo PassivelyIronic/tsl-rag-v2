@@ -6,7 +6,14 @@ from tsl_rag.core.models import (
     DocumentType,
     LegalHierarchyLevel,
 )
-from tsl_rag.generation.generator import _build_context, _extract_citations
+from tsl_rag.core.settings import Settings
+from tsl_rag.generation.generator import (
+    SYSTEM_PROMPT,
+    _build_context,
+    _extract_citations,
+    _reasoning_kwargs,
+    _system_prompt,
+)
 from tsl_rag.retrieval.retriever import RetrievalResult
 
 pytestmark = pytest.mark.unit
@@ -91,6 +98,75 @@ def test_extract_citations_parses_paragraph_and_polish_spelling():
     results2 = [_fake_result("d::0002", "aetr", "zakres", article="2")]
     cits2 = _extract_citations("Dotyczy państw trzecich. [aetr | Artykuł 2]", results2)
     assert cits2[0].article == "2"
+
+
+def _settings(**overrides) -> Settings:
+    return Settings(
+        postgres_dsn="postgresql+asyncpg://u:p@localhost:5433/db",
+        **overrides,
+    )
+
+
+def test_system_prompt_unchanged_without_prefix():
+    assert _system_prompt(_settings()) == SYSTEM_PROMPT
+
+
+def test_system_prompt_prepends_prefix_as_own_line():
+    """
+    Regresja pomiarowa: `/no_think` zeruje rozumowanie nemotrona tylko jako
+    samodzielny token otwierający wiadomość systemową. Doklejony w środku
+    zdania przestaje działać, a wtedy model znów zjada budżet max_tokens
+    na reasoning i zwraca pustą treść.
+    """
+    prompt = _system_prompt(_settings(llm_system_prefix="/no_think"))
+    assert prompt.startswith("/no_think\n")
+    assert prompt.endswith(SYSTEM_PROMPT)
+
+
+def test_system_prompt_ignores_whitespace_only_prefix():
+    assert _system_prompt(_settings(llm_system_prefix="   ")) == SYSTEM_PROMPT
+
+
+@pytest.mark.parametrize(
+    "mangled",
+    [
+        "C:/Program Files/Git/no_think",  # dokładnie to, co zrobił Git Bash
+        "C:\\Program Files\\Git\\no_think",
+        "D:/cokolwiek",
+    ],
+)
+def test_system_prefix_rejects_mangled_windows_path(mangled):
+    """
+    Regresja z 2026-07-27: `LLM_SYSTEM_PREFIX=/no_think uv run ...` w Git Bashu
+    dociera do procesu jako `C:/Program Files/Git/no_think` (konwersja ścieżek
+    MSYS). Przebieg evalu wyglądał wtedy na pomiar `/no_think`, a mierzył prompt
+    ze wklejoną ścieżką — i wyszedł z niego wniosek o spadku precyzji cytowań.
+    Wyjątek jest tu lepszy niż liczba, której nikt nie kwestionuje.
+    """
+    with pytest.raises(ValueError, match="ścieżkę systemu plików"):
+        _settings(llm_system_prefix=mangled)
+
+
+def test_reasoning_kwargs_shape_per_provider():
+    """
+    OpenRouter chce `reasoning: {"effort": ...}` w extra_body, reszta
+    providerów zgodnych z OpenAI — płaskiego `reasoning_effort`.
+
+    Provider inny niż openrouter reprezentuje tu ollama, a nie openai:
+    Settings wymaga klucza API przy CHAT_PROVIDER=openai, a ten test nie ma
+    nic wspólnego z kluczami.
+    """
+    assert _reasoning_kwargs(_settings()) == {}
+    assert _reasoning_kwargs(
+        _settings(
+            chat_provider="openrouter",
+            openrouter_api_key="test-key",
+            llm_reasoning_effort="none",
+        )
+    ) == {"extra_body": {"reasoning": {"effort": "none"}}}
+    assert _reasoning_kwargs(_settings(chat_provider="ollama", llm_reasoning_effort="low")) == {
+        "reasoning_effort": "low"
+    }
 
 
 def test_extract_citations_skips_document_absent_from_context():

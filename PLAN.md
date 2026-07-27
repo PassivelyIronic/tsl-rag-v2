@@ -118,7 +118,8 @@ w dokumencie właściwym niż w konkurencyjnym. To problem korpusu i retrievalu,
 - Brak łańcucha fallbacku providerów — jedno `429` kończy zapytanie komunikatem o błędzie
 - Brak jakiejkolwiek observability
 - Brak testów integracyjnych (`tests/integration`, `tests/e2e` są puste)
-- Darmowy model generacji: 13-19 s i sporadycznie puste odpowiedzi (reasoning zjada budżet)
+- Darmowy model generacji: 17.3 s średnio i **6 pustych odpowiedzi na 21 pytań** (reasoning
+  zjada budżet) — zmierzone w `run_015`. To nie jest „sporadycznie", to blisko co trzecie pytanie
 - `--use-judge` niesprawny — klucz Gemini ma zerowy limit
 - Repo **nie ma remote'a** — 27 commitów leży lokalnie, `tsl-rag-v2` nieutworzone na GitHubie
 
@@ -142,10 +143,67 @@ Kolejność, w mojej ocenie:
    o północy UTC, a `run_013` padł po 3 pytaniach. Ten przebieg jest potrzebny jako punkt
    odniesienia dla Fazy 3 i da też pierwszy pełny wynik semantyczny (rekord zapisuje
    teraz całe odpowiedzi, nie 200 znaków).
-3. **Sprawdzić `LLM_REASONING_EFFORT=none` na nemotronie** — parametr jest wdrożony, ale
-   niezweryfikowany na docelowym modelu. Powinien usunąć puste odpowiedzi i skrócić
-   latencję. Zmiana generacji, więc pomiar przed i po.
+3. ~~Sprawdzić `LLM_REASONING_EFFORT=none` na nemotronie~~ → **rozstrzygnięte 2026-07-27:
+   parametr na tym modelu NIE DZIAŁA**, mechanizmem jest `LLM_SYSTEM_PREFIX=/no_think`.
+   Szczegóły niżej. **Zostaje jedno zadanie: powtórzyć przebieg `run_016`**, bo pierwszy
+   był nieważny (Git Bash zmangował prefiks w ścieżkę). Komenda, po resecie limitu:
+
+   ```powershell
+   # PowerShell, nie Git Bash — patrz CLAUDE.md §8
+   $env:CHAT_PROVIDER="openrouter"; $env:LLM_SYSTEM_PREFIX="/no_think"
+   uv run python -m evals.run_evals --limit 21 --sleep 2 `
+     --output evals/results/run_016_nemotron21_nothink.json
+   ```
+
+   Porównanie z `run_015_nemotron21_baseline.json` (te same 21 pytań, dobór warstwowy).
+   `Settings` odrzuca dziś zmangowaną wartość wyjątkiem, więc pomyłka się nie powtórzy cicho.
 4. **Faza 3: łańcuch fallbacku** z płatnym modelem jako pierwszym ogniwem (decyzja niżej).
+
+### Rozumowanie nemotrona: parametr API nie działa, token w promptcie działa
+
+Zmierzone 2026-07-27, jedno pytanie, ten sam kontekst 5 chunków, `LLM_MAX_TOKENS=1024`.
+Model **deklaruje** `reasoning` w `supported_parameters` OpenRoutera, więc deklaracja
+providera nie jest tu dowodem:
+
+| Dźwignia | tokeny rozumowania | tokeny wyjścia łącznie |
+|---|---|---|
+| brak parametru | 381, 298 | 467, 398 |
+| `reasoning: {"effort": "none"}` | 436, 453 | 508, 570 |
+| `reasoning: {"enabled": false}` | 345 | 446 |
+| `reasoning: {"exclude": true}` | 354 | 440 |
+| **`/no_think` w system promptcie** | **0** | **86** |
+
+Wdrożone jako `LLM_SYSTEM_PREFIX` — jawna konfiguracja, nie zgadywana z nazwy modelu,
+tak samo jak prefiksy E5 przy embeddingach (`CLAUDE.md` §3). `LLM_REASONING_EFFORT`
+zostaje, bo dotyczy innych providerów, ale ma teraz w komentarzu zapisane, że na modelu
+domyślnym jest bezskuteczny.
+
+**Baseline podzbioru zmierzony** — `run_015_nemotron21_baseline.json`, 21 pytań dobranych
+warstwowo (wszystkie 6 kategorii), bez prefiksu, 21/21 bez błędu providera:
+
+| Metryka | Wynik |
+|---|---|
+| `answer_score` (keyword) | 0.508 |
+| `semantic_score` | 0.770 |
+| `citation_hit_rate` | 0.786 |
+| `citation_precision` | 0.810 |
+| `retrieval_recall` | 0.929 |
+| latencja średnia | 17.3 s |
+| `refusal_precision` | 1.000 |
+| puste odpowiedzi (`has_answer=False`) | 6 z 21 |
+
+**Efekt `/no_think` pozostaje NIEZMIERZONY.** Przebieg porównawczy z 2026-07-27 jest
+nieważny: Git Bash zamienił `/no_think` na `C:/Program Files/Git/no_think`, więc do system
+promptu poszła ścieżka. Plik zachowany jako `run_016_NIEWAZNY_prefiks_zmangowany.json`
+— wyłącznie jako ślad pomyłki, nie jako pomiar. Nie cytuj z niego liczb: przy zaśmieconym
+promptcie spadła precyzja cytowań i `refusal_precision`, czego nie da się odróżnić od
+efektu samego wyłączenia rozumowania.
+
+**Flaga `--limit` w `run_evals`** dobiera pytania **warstwowo po kategoriach**, nie
+„pierwsze N" — pierwsze 21 pytań datasetu to wyłącznie `numeric_fact`, `procedure`
+i `scope`, czyli podzbiór bez `out_of_scope` nie mierzyłby `refusal_precision`,
+a bez `penalty` pomijałby najsłabszą kategorię retrievalu. Dobór jest deterministyczny,
+żeby przebiegi przed/po dotyczyły dokładnie tych samych pytań.
 
 Do rozważenia bez pilności: recall liczony po artykułach zamiast po dokumentach
 (obecny zawyża — patrz błędne odmowy przy modelu referencyjnym), podział dużych chunków

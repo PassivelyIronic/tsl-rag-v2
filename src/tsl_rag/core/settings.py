@@ -110,15 +110,31 @@ class Settings(BaseSettings):
     # Sterowanie rozumowaniem modeli typu "reasoning". Puste = nie wysyłamy
     # parametru wcale (zachowanie domyślne providera).
     #
-    # Po co: zmierzone na nvidia/nemotron-nano-9b-v2:free — 455 z 621 tokenów
-    # wyjścia poszło na reasoning, a przy dłuższym łańcuchu model wyczerpuje
-    # llm_max_tokens i zwraca PUSTĄ treść. Wyłączenie rozumowania powinno
-    # jednocześnie usunąć puste odpowiedzi i skrócić latencję.
-    #
     # Wysyłane jako `reasoning: {"effort": ...}` przez OpenRouter i jako
     # `reasoning_effort` przez pozostałych. Nie każdy model to obsługuje —
     # Gemma odpowiada wtedy 400 "Thinking budget is not supported".
+    #
+    # UWAGA, zmierzone 2026-07-27: na nvidia/nemotron-nano-9b-v2:free ten
+    # parametr NIE DZIAŁA, mimo że model deklaruje `reasoning`
+    # w `supported_parameters` OpenRoutera. Tokeny rozumowania bez parametru:
+    # 381 i 298; przy `effort=none`: 436 i 453; przy `reasoning.enabled=false`:
+    # 345. Czyli żadnej redukcji. Na tym modelu dźwignią jest
+    # llm_system_prefix poniżej, nie to pole.
     llm_reasoning_effort: Literal["", "none", "minimal", "low", "medium", "high"] = ""
+
+    # Tekst wstawiany PRZED system prompt generatora. Puste = nic nie doklejamy.
+    #
+    # Istnieje, bo część modeli rozumujących sterowana jest tokenem w promptcie,
+    # a nie parametrem API. Zmierzone na nvidia/nemotron-nano-9b-v2:free
+    # (jedno pytanie, ten sam kontekst 5 chunków): `/no_think` zbija tokeny
+    # rozumowania z ~350-450 do 0, a całe wyjście z ~446 tokenów do 86.
+    # To usuwa jednocześnie źródło pustych odpowiedzi — przy zerowym reasoningu
+    # łańcuch rozumowania nie ma jak wyczerpać llm_max_tokens.
+    #
+    # Wartość jest JAWNĄ KONFIGURACJĄ, nie jest zgadywana z nazwy modelu —
+    # tak samo jak prefiksy E5 przy embeddingach (CLAUDE.md §3). `/no_think`
+    # wysłane do modelu, który go nie zna, zostaje w promptcie jako śmieć.
+    llm_system_prefix: str = ""
 
     postgres_dsn: PostgresDsn
 
@@ -179,6 +195,29 @@ class Settings(BaseSettings):
         total = round(self.bm25_weight + self.dense_weight, 6)
         if total != 1.0:
             raise ValueError(f"bm25_weight + dense_weight musi = 1.0, got {total}")
+        return self
+
+    @model_validator(mode="after")
+    def validate_system_prefix(self) -> "Settings":
+        """
+        Odrzuca prefiks, który wygląda na ścieżkę systemu plików.
+
+        Git Bash na Windowsie stosuje konwersję ścieżek MSYS: argument
+        zaczynający się od `/` jest tłumaczony na ścieżkę Windows, więc
+        `LLM_SYSTEM_PREFIX=/no_think uv run ...` dociera do procesu jako
+        `C:/Program Files/Git/no_think`. Zdarzyło się to 2026-07-27
+        i unieważniło cały przebieg evalu: do system promptu poszła ścieżka,
+        a wynik wyglądał jak pomiar `/no_think`. Cichy błąd tej klasy jest
+        groźniejszy niż wyjątek, bo produkuje liczbę, której nikt nie kwestionuje.
+        """
+        prefix = self.llm_system_prefix
+        if ":/" in prefix or ":\\" in prefix or "\\" in prefix:
+            raise ValueError(
+                f"LLM_SYSTEM_PREFIX wygląda na ścieżkę systemu plików: {prefix!r}. "
+                "Prawdopodobnie Git Bash przetłumaczył wartość zaczynającą się od '/'. "
+                "Ustaw ją w pliku .env (dotenv nie tłumaczy ścieżek) albo poprzedź "
+                "komendę zmienną MSYS_NO_PATHCONV=1."
+            )
         return self
 
     @model_validator(mode="after")

@@ -206,7 +206,55 @@ def _failed_result(question: GoldenQuestion, exc: Exception) -> dict:
     }
 
 
-async def run_evaluation(output_path: Path | None, use_judge: bool, sleep_s: float) -> None:
+def select_questions(dataset: list[GoldenQuestion], limit: int | None) -> list[GoldenQuestion]:
+    """
+    Podzbiór datasetu o zachowanym pokryciu kategorii.
+
+    Dobór jest WARSTWOWY, a nie "pierwsze N", bo dataset jest pogrupowany
+    tematycznie: pierwsze 21 pytań to wyłącznie numeric_fact, procedure
+    i scope — bez penalty, cross_document i out_of_scope. Podzbiór z prefiksu
+    listy nie zmierzyłby więc ani kar, ani refusal_precision, czyli akurat
+    tego, co przy zmianach w generacji psuje się najczęściej.
+
+    Dobór jest deterministyczny (round-robin po kategoriach w kolejności
+    alfabetycznej, w kategorii kolejność z datasetu), żeby dwa przebiegi
+    porównywane przed/po dotyczyły dokładnie tych samych pytań.
+    """
+    if limit is None or limit >= len(dataset):
+        return list(dataset)
+    if limit <= 0:
+        raise ValueError("--limit musi być liczbą dodatnią")
+
+    by_category: dict[str, list[GoldenQuestion]] = {}
+    for q in dataset:
+        by_category.setdefault(q.category, []).append(q)
+
+    selected: list[GoldenQuestion] = []
+    order = sorted(by_category)
+    round_index = 0
+    while len(selected) < limit:
+        added = False
+        for cat in order:
+            if round_index < len(by_category[cat]):
+                selected.append(by_category[cat][round_index])
+                added = True
+                if len(selected) == limit:
+                    break
+        if not added:
+            break  # wyczerpane wszystkie kategorie
+        round_index += 1
+
+    # Kolejność wynikowa zgodna z datasetem — czytelniejszy log przebiegu.
+    positions = {q.id: i for i, q in enumerate(dataset)}
+    return sorted(selected, key=lambda q: positions[q.id])
+
+
+async def run_evaluation(
+    output_path: Path | None,
+    use_judge: bool,
+    sleep_s: float,
+    limit: int | None = None,
+) -> None:
     judge: GeminiJudge | None = None
     if use_judge:
         from evals.judge import GeminiJudge as _GeminiJudge
@@ -218,12 +266,23 @@ async def run_evaluation(output_path: Path | None, use_judge: bool, sleep_s: flo
 
     judge_model = judge.MODEL if judge else "keyword_match"
 
+    questions = select_questions(list(GOLDEN_DATASET), limit)
+    if limit is not None and len(questions) < len(GOLDEN_DATASET):
+        spread = ", ".join(
+            f"{cat}={sum(1 for q in questions if q.category == cat)}"
+            for cat in sorted({q.category for q in questions})
+        )
+        logger.warning(
+            f"PODZBIÓR: {len(questions)} z {len(GOLDEN_DATASET)} pytań ({spread}). "
+            f"Wyniki nie są porównywalne z przebiegami na pełnym datasecie."
+        )
+
     results_list: list[dict] = []
 
     async with HybridRetriever() as retriever:
         generator = RAGGenerator()
-        for i, question in enumerate(GOLDEN_DATASET):
-            logger.info(f"[{i + 1}/{len(GOLDEN_DATASET)}] {question.question[:70]}")
+        for i, question in enumerate(questions):
+            logger.info(f"[{i + 1}/{len(questions)}] {question.question[:70]}")
             try:
                 result = await evaluate_question(question, retriever, generator, judge)
             except Exception as exc:
@@ -239,7 +298,7 @@ async def run_evaluation(output_path: Path | None, use_judge: bool, sleep_s: flo
             # Odstęp między pytaniami: darmowe tiery mają limit zapytań na
             # minutę, a przy 56 pytaniach przebieg bez pauzy dostaje 429 w połowie.
             pause = max(sleep_s, 5.0 if use_judge else 0.0)
-            if pause and i < len(GOLDEN_DATASET) - 1:
+            if pause and i < len(questions) - 1:
                 await asyncio.sleep(pause)
 
     summary = _aggregate(results_list)
@@ -351,6 +410,12 @@ def _config_snapshot() -> dict:
         "embedding_model": s.active_embedding_model,
         "chat_provider": s.chat_provider,
         "chat_model": s.active_llm_model,
+        # Oba sterowniki rozumowania w snapshocie, bo różnica latencji
+        # i pustych odpowiedzi między przebiegami bierze się głównie stąd,
+        # a po fakcie nie ma jak odtworzyć, który był ustawiony.
+        "llm_max_tokens": s.llm_max_tokens,
+        "llm_reasoning_effort": s.llm_reasoning_effort,
+        "llm_system_prefix": s.llm_system_prefix,
         "retrieval_top_k": s.retrieval_top_k,
         "retrieval_rerank_top_n": s.retrieval_rerank_top_n,
         "bm25_weight": s.bm25_weight,
@@ -419,8 +484,14 @@ def main(
     sleep_s: float = typer.Option(
         0.0, "--sleep", help="Odstęp w sekundach między pytaniami (limity zapytań na minutę)"
     ),
+    limit: int = typer.Option(
+        None,
+        "--limit",
+        help="Zmierz tylko N pytań, dobranych warstwowo po kategoriach "
+        "(darmowy limit providera to ~50 wywołań na dobę)",
+    ),
 ) -> None:
-    asyncio.run(run_evaluation(output, use_judge, sleep_s))
+    asyncio.run(run_evaluation(output, use_judge, sleep_s, limit))
 
 
 if __name__ == "__main__":

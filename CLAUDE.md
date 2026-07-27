@@ -125,6 +125,7 @@ uv run python -m tsl_rag.ingestion.cli ingest-all data/raw/ # ingest (oczekiwane
 uv run python -m tsl_rag.api.main                          # FastAPI na :8000
 uv run streamlit run ui.py                                 # UI (wymaga działającego API)
 uv run python -m evals.run_evals --output evals/results/run_XXX.json
+uv run python -m evals.run_evals --limit 21 --output ...  # podzbiór warstwowy, gdy limit providera
 uv run python -m evals.compare_models --models "<slug>" --resume
 ```
 
@@ -258,6 +259,8 @@ drugiego celu projektu.
 | `RuntimeError: Korpus zaindeksowano modelem embeddingów …` przy starcie | Zmieniono `EMBEDDING_PROVIDER` albo model bez ponownego ingestu | `ingest-all` od nowa. To zabezpieczenie, nie usterka — bez niego retrieval zwracałby losowe chunki bez żadnego błędu |
 | Retrieval zwraca bezsens po zmianie parsera/chunkera | Nadwyżkowe chunki z poprzedniego ingestu (mniej chunków niż wcześniej) | Naprawione przez `_delete_stale()`. Jeśli wróci: `SELECT count(*) FROM document_chunks` vs `stored` z ingestu |
 | Słowa rozerwane w środku (`tygodnio wego`) w kontekście lub cytowaniach | Miękkie łączniki z PDF-a (U+00AD) | Naprawione w `normalize_pdf_text()`. Nowy parser musi to wołać |
+| `llm_system_prefix` w snapshocie evalu to ścieżka (`C:/Program Files/Git/no_think`) | Git Bash tłumaczy argument zaczynający się od `/` na ścieżkę Windows (konwersja MSYS). `LLM_SYSTEM_PREFIX=/no_think uv run ...` wysyła do promptu ścieżkę, a przebieg wygląda na poprawny pomiar | Ustaw w `.env` (dotenv nie tłumaczy) albo `MSYS_NO_PATHCONV=1` przed komendą. `Settings` odrzuca dziś taką wartość wyjątkiem — unieważniła jeden przebieg evalu 2026-07-27 |
+| `LLM_REASONING_EFFORT` nie zmienia nic na nemotronie | Model **deklaruje** `reasoning` w `supported_parameters` OpenRoutera, ale go ignoruje. Zmierzone 2026-07-27: tokeny rozumowania 381/298 bez parametru, 436/453 przy `effort=none`, 345 przy `reasoning.enabled=false` | Użyj `LLM_SYSTEM_PREFIX=/no_think` — na tym modelu rozumowanie steruje się tokenem w promptcie, nie parametrem API. Zmierzone: reasoning 0, wyjście 86 tokenów wobec 446 |
 | `404 — model unavailable for free` | Model wypadł z darmowej puli OpenRoutera | Sprawdź aktualny slug, nie retry'uj |
 | `400 — not a valid model ID` | Zły slug (brak `-it` itp.) | Skopiuj slug z zakładki API modelu |
 | `429 — Provider returned error` | Przeciążenie upstream providera, **nie** limit konta | Fallback na innego providera; retry rzadko pomaga |
