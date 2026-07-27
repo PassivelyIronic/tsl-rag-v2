@@ -9,7 +9,9 @@ from loguru import logger
 
 from tsl_rag.api.routers.health import router as health_router
 from tsl_rag.api.routers.query import router as query_router
+from tsl_rag.core.llm_client import resolve_chat_chain
 from tsl_rag.core.settings import get_settings
+from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
 
 
@@ -40,10 +42,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as exc:
         logger.error(f"Nie udało się zainicjalizować retrievera: {exc}")
 
+    # Raz na proces, bo trzyma stan bezpiecznika łańcucha fallbacku.
+    # Tworzenie per request zerowałoby licznik porażek per ogniwo.
+    app.state.generator = RAGGenerator(settings)
+
+    chain = resolve_chat_chain(settings)
     logger.info(
         f"App start | env={settings.app_env} | "
         f"embedding={settings.embedding_provider} | "
-        f"chat={settings.chat_provider} | model={settings.active_llm_model}"
+        f"chat={settings.chat_provider} | model={settings.active_llm_model} | "
+        f"łańcuch fallbacku: {' → '.join(str(t) for t in chain)}"
     )
 
     yield

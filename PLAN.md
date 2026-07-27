@@ -117,7 +117,9 @@ chunki mają tę samą flagę. Realna przyczyna to dense (MRR 0.352 na tej kateg
 
 ### Nadal nie działa
 
-- Brak łańcucha fallbacku providerów — jedno `429` kończy zapytanie komunikatem o błędzie
+- ~~Brak łańcucha fallbacku providerów~~ — **zrobione 2026-07-27** (Faza 3). Domyślnie
+  wyłączony (`CHAT_FALLBACK_CHAIN` puste), bo repo jest publiczne; we wdrożeniu dla
+  użytkownika końcowego wypełnia się go zgodnie z decyzją o płatnym modelu jako pierwszym
 - Brak jakiejkolwiek observability
 - Brak testów integracyjnych (`tests/integration`, `tests/e2e` są puste)
 - Darmowy model generacji: 17.3 s średnio i **6 pustych odpowiedzi na 21 pytań** (reasoning
@@ -622,10 +624,35 @@ z backoffem). System używany bez nadzoru autora nie może zależeć od jednego 
 - [ ] Cloudflare Workers AI jako `chat_provider="cloudflare"` (10k neuronów/dobę, reset 00:00 UTC,
       brak rotacji modeli — wagi na GPU Cloudflare)
 - [ ] Benchmark przez `compare_models.py`: kandydaci Cloudflare vs `nemotron-nano-9b-v2:free`
-- [ ] **Łańcuch fallbacku** w `get_chat_client()` / `RAGGenerator`:
-      uporządkowana lista `(provider, model)`, przejście dalej przy `404`/`400`/`429`,
-      bez retry na `404` i `400` (są deterministyczne), circuit breaker po N porażkach,
-      log strukturalny każdego przełączenia
+- [x] **Łańcuch fallbacku — ZROBIONY** (2026-07-27). `CHAT_FALLBACK_CHAIN` w formacie
+      `provider:model,provider:model`; pierwszym ogniwem jest zawsze `CHAT_PROVIDER`,
+      więc konfiguracja bez łańcucha zachowuje się jak przedtem. Domyślnie **puste**,
+      bo repo jest publiczne — łańcuch z płatnym modelem wydawałby pieniądze każdego,
+      kto je sklonuje.
+
+      Klasyfikacja awarii w `generation/fallback.py`: `400`/`404` jako deterministyczne
+      (ten sam request da ten sam błąd, więc bez retry), `429`/`5xx`/timeout jako
+      przejściowe, `401`/`403` jako konfiguracja. Przejście dalej następuje we wszystkich
+      przypadkach — także przy **pustej odpowiedzi**, bo nemotron zwracał ją w 6 z 21
+      pytań (`run_015`), a oddanie pustki użytkownikowi przy skonfigurowanym modelu
+      zapasowym marnowałoby posiadaną odporność.
+
+      **Odmowa NIE jest traktowana jak awaria.** Przełączanie w jej wyniku szukałoby
+      modelu skłonnego halucynować, czyli odwrotnie do zasady, że halucynacja jest
+      gorsza niż odmowa.
+
+      Bezpiecznik: N porażek z rzędu odcina ogniwo na `CHAT_BREAKER_COOLDOWN_S`, sukces
+      zeruje licznik, po cooldownie ogniwo dostaje czystą kartę. Trzyma stan, więc
+      `RAGGenerator` jest tworzony **raz na proces** w lifespanie aplikacji — wcześniej
+      router tworzył go per request, co zerowałoby licznik i bezpiecznik nie chroniłby
+      przed niczym.
+
+      **Gate osiągnięty na realnym providerze:** pierwsze ogniwo z nieistniejącym slugiem
+      zwróciło `400`, nastąpiło jedno przełączenie, odpowiedź przyszła z drugiego ogniwa
+      z dwoma poprawnymi cytowaniami (`ec_561_2006 | Art. 6(1)`). 33 testy jednostkowe
+      pokrywają klasyfikację, budowę łańcucha, bezpiecznik i samą pętlę przełączania
+      na atrapach — ścieżki awaryjne nie występują w normalnym przebiegu, więc muszą
+      być wymuszone testem, a nie wypatrywane w produkcji.
 - [ ] **Puste odpowiedzi — zdiagnozowane, do naprawy pomiarem.** `nemotron-nano-9b-v2:free`
       jest modelem rozumującym: w zmierzonym wywołaniu **455 z 621 tokenów wyjścia poszło
       na reasoning**. Przy `LLM_MAX_TOKENS=1024` długi łańcuch rozumowania zjada cały budżet

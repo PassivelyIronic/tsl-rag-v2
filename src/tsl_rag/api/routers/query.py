@@ -62,10 +62,30 @@ def get_retriever(request: Request) -> HybridRetriever:
     return retriever
 
 
+def get_generator(request: Request) -> RAGGenerator:
+    """
+    Generator utworzony raz na proces, nie per request.
+
+    Powód jest ten sam co przy retrieverze, ale skutek inny: RAGGenerator
+    trzyma bezpiecznik łańcucha fallbacku, czyli licznik porażek per ogniwo.
+    Nowa instancja przy każdym pytaniu zerowałaby ten licznik, więc bezpiecznik
+    nigdy by się nie otworzył i każde zapytanie płaciłoby pełny timeout
+    na providerze, o którym już wiadomo, że nie odpowiada.
+    """
+    generator: RAGGenerator | None = getattr(request.app.state, "generator", None)
+    if generator is None:
+        # Awaryjnie: brak w lifespanie nie może wywalić zapytania, tylko
+        # kosztuje utratę stanu bezpiecznika.
+        logger.warning("Brak generatora w app.state — tworzę doraźnie, bezpiecznik bez historii")
+        return RAGGenerator()
+    return generator
+
+
 @router.post("", response_model=QueryResponse)
 async def query_rag(
     request: QueryRequest,
     retriever: Annotated[HybridRetriever, Depends(get_retriever)],
+    generator: Annotated[RAGGenerator, Depends(get_generator)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> QueryResponse:
     """
@@ -103,7 +123,6 @@ async def query_rag(
     if not results:
         logger.warning(f"Brak wyników retrievalu dla: '{request.query[:60]}'")
 
-    generator = RAGGenerator()
     try:
         response = await generator.generate(request.query, results)
     except Exception as exc:

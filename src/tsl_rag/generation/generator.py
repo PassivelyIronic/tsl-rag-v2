@@ -6,9 +6,10 @@ from textwrap import dedent
 
 from loguru import logger
 
-from tsl_rag.core.llm_client import get_chat_client
+from tsl_rag.core.llm_client import ChatTarget, get_chat_client_for, resolve_chat_chain
 from tsl_rag.core.models import Citation, QueryResponse
 from tsl_rag.core.settings import Settings, get_settings
+from tsl_rag.generation.fallback import CircuitBreaker, FailureKind, classify_failure
 from tsl_rag.retrieval.retriever import RetrievalResult
 
 SYSTEM_PROMPT = dedent("""\
@@ -39,18 +40,22 @@ SYSTEM_PROMPT = dedent("""\
 _NO_ANSWER_MARKER = "Nie mogę odpowiedzieć"
 
 
-def _reasoning_kwargs(settings: Settings) -> dict:
+def _reasoning_kwargs(settings: Settings, provider: str | None = None) -> dict:
     """
     Parametr sterujący rozumowaniem, w formie właściwej dla providera.
 
     OpenRouter przyjmuje ujednolicone `reasoning: {"effort": ...}` w ciele
     żądania, reszta providerów zgodnych z OpenAI — `reasoning_effort`.
     Puste ustawienie oznacza, że nie wysyłamy nic i zostaje zachowanie domyślne.
+
+    `provider` podaje łańcuch fallbacku, bo ogniwo zapasowe bywa u innego
+    providera niż `settings.chat_provider` — wysłanie wtedy formy OpenRoutera
+    do OpenAI kończy się błędem 400 i niepotrzebnym przejściem dalej.
     """
     effort = settings.llm_reasoning_effort
     if not effort:
         return {}
-    if settings.chat_provider == "openrouter":
+    if (provider or settings.chat_provider) == "openrouter":
         return {"extra_body": {"reasoning": {"effort": effort}}}
     return {"reasoning_effort": effort}
 
@@ -69,15 +74,37 @@ def _system_prompt(settings: Settings) -> str:
     return f"{prefix}\n{SYSTEM_PROMPT}"
 
 
+_ALL_FAILED_MESSAGE = (
+    "Usługa modelu językowego jest chwilowo niedostępna u wszystkich "
+    "skonfigurowanych dostawców. Spróbuj ponownie za kilka minut."
+)
+
+
 class RAGGenerator:
     """
     Generuje odpowiedź na podstawie pytania i listy RetrievalResult.
+
+    Przechodzi po łańcuchu (provider, model) z konfiguracji: przy awarii
+    jednego ogniwa próbuje kolejnego, zamiast zwracać użytkownikowi błąd.
+    Bezpiecznik żyje w instancji, więc generator ma być tworzony RAZ na proces
+    — tak jak HybridRetriever. Nowa instancja per request zerowałaby licznik
+    porażek i bezpiecznik nie chroniłby przed niczym.
 
     Usage
     -----
     generator = RAGGenerator()
     response  = await generator.generate(query, retrieval_results)
     """
+
+    def __init__(self, settings: Settings | None = None) -> None:
+        # Ustawienia wstrzykiwane, bo próg bezpiecznika czytany jest tutaj,
+        # a ścieżka zapytania dostaje Settings argumentem. Bez tego test
+        # podający własny próg konfigurowałby co innego, niż mierzy.
+        settings = settings or get_settings()
+        self._breaker = CircuitBreaker(
+            failures=settings.chat_breaker_failures,
+            cooldown_s=settings.chat_breaker_cooldown_s,
+        )
 
     async def generate(
         self,
@@ -86,52 +113,25 @@ class RAGGenerator:
     ) -> QueryResponse:
         t0 = time.monotonic()
         settings = get_settings()
-        client = get_chat_client(settings)
 
         context_block, used_results = _build_context(results, settings.max_context_chars)
-
         user_message = _build_user_message(query, context_block)
+        messages = [
+            {"role": "system", "content": _system_prompt(settings)},
+            {"role": "user", "content": user_message},
+        ]
 
-        logger.debug(f"Calling LLM for query: '{query[:80]}'")
-        response = await client.chat.completions.create(
-            model=settings.active_llm_model,
-            messages=[
-                {"role": "system", "content": _system_prompt(settings)},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=settings.llm_temperature,
-            max_tokens=settings.llm_max_tokens,
-            **_reasoning_kwargs(settings),
+        chain = resolve_chat_chain(settings)
+        answer, has_answer, model_used, switches = await self._generate_with_fallback(
+            query, messages, chain, settings
         )
 
-        choice = response.choices[0]
-        answer = (choice.message.content or "").strip()
-
-        if not answer:
-            # Model rozumujący potrafi zużyć cały budżet max_tokens na łańcuch
-            # rozumowania i zwrócić PUSTĄ treść. Zmierzone na
-            # nvidia/nemotron-nano-9b-v2:free: 455 z 621 tokenów wyjścia poszło
-            # na reasoning. Pusta odpowiedź jest dla użytkownika gorsza niż
-            # odmowa — wygląda jak zawieszenie systemu, a nie jak brak danych.
-            usage = getattr(response, "usage", None)
-            logger.error(
-                f"Model {settings.active_llm_model} zwrócił pustą treść "
-                f"(finish_reason={choice.finish_reason}, usage={usage})"
-            )
-            answer = (
-                "Nie udało się przygotować odpowiedzi — model językowy zwrócił pustą "
-                "treść. Spróbuj zadać pytanie jeszcze raz, najlepiej krócej."
-            )
-            has_answer = False
-        else:
-            has_answer = _NO_ANSWER_MARKER not in answer
         latency_ms = int((time.monotonic() - t0) * 1000)
-
         citations = _extract_citations(answer, used_results)
 
         logger.info(
-            f"generate() → has_answer={has_answer}, "
-            f"citations={len(citations)}, latency={latency_ms}ms"
+            f"generate() → has_answer={has_answer}, model={model_used}, "
+            f"citations={len(citations)}, przełączeń={switches}, latency={latency_ms}ms"
         )
 
         return QueryResponse(
@@ -139,14 +139,95 @@ class RAGGenerator:
             answer=answer,
             citations=citations,
             retrieved_chunks=[],  # wypełniane przez API layer jeśli debug=True
-            model_used=settings.active_llm_model,
+            model_used=model_used,
             latency_ms=latency_ms,
             has_answer=has_answer,
             metadata={
                 "chunks_in_context": len(used_results),
                 "context_chars": len(context_block),
+                "fallback_switches": switches,
+                "chain": [str(t) for t in chain],
             },
         )
+
+    async def _generate_with_fallback(
+        self,
+        query: str,
+        messages: list[dict],
+        chain: list[ChatTarget],
+        settings: Settings,
+    ) -> tuple[str, bool, str, int]:
+        """
+        Przechodzi po ogniwach łańcucha. Zwraca (odpowiedź, has_answer, model, przełączenia).
+
+        Pusta treść jest traktowana jak awaria i przełącza na kolejne ogniwo.
+        Powód jest zmierzony: nvidia/nemotron-nano-9b-v2:free zwrócił pustkę
+        w 6 z 21 pytań (run_015), bo łańcuch rozumowania zjadał cały budżet
+        max_tokens. Zwrócenie tej pustki użytkownikowi, gdy skonfigurowano
+        model zapasowy, byłoby marnowaniem odporności, którą się ma.
+        """
+        switches = 0
+        last_error: str | None = None
+
+        for index, target in enumerate(chain):
+            if self._breaker.is_open(str(target)):
+                logger.warning(f"Pomijam {target} — bezpiecznik otwarty")
+                continue
+
+            if index > 0:
+                switches += 1
+                logger.warning(
+                    f"Fallback: przełączam na {target} "
+                    f"(ogniwo {index + 1}/{len(chain)}, powód: {last_error})"
+                )
+
+            try:
+                client = get_chat_client_for(target.provider, settings)
+            except ValueError as exc:
+                # Brak klucza dla ogniwa zapasowego nie może wywalić zapytania,
+                # które ogniwo główne obsłużyłoby poprawnie.
+                last_error = f"konfiguracja: {exc}"
+                logger.error(f"Ogniwo {target} nieużywalne — {exc}")
+                self._breaker.record_failure(str(target))
+                continue
+
+            try:
+                logger.debug(f"Wywołanie {target} dla zapytania: '{query[:80]}'")
+                response = await client.chat.completions.create(
+                    model=target.model,
+                    messages=messages,  # type: ignore[arg-type]
+                    temperature=settings.llm_temperature,
+                    max_tokens=settings.llm_max_tokens,
+                    **_reasoning_kwargs(settings, target.provider),
+                )
+            except Exception as exc:  # noqa: BLE001 — klasyfikujemy niżej
+                kind = classify_failure(exc)
+                last_error = f"{kind.value}: {type(exc).__name__}"
+                logger.error(f"Ogniwo {target} zawiodło [{kind.value}]: {str(exc)[:200]}")
+                self._breaker.record_failure(str(target))
+                continue
+
+            choice = response.choices[0]
+            answer = (choice.message.content or "").strip()
+
+            if not answer:
+                usage = getattr(response, "usage", None)
+                last_error = FailureKind.EMPTY.value
+                logger.error(
+                    f"Ogniwo {target} zwróciło pustą treść "
+                    f"(finish_reason={choice.finish_reason}, usage={usage})"
+                )
+                self._breaker.record_failure(str(target))
+                continue
+
+            self._breaker.record_success(str(target))
+            return answer, _NO_ANSWER_MARKER not in answer, target.model, switches
+
+        # Wszystkie ogniwa padły. Komunikat po polsku, bo trafia wprost
+        # do nietechnicznego użytkownika (CLAUDE.md §1).
+        logger.error(f"Wszystkie ogniwa łańcucha zawiodły. Ostatni powód: {last_error}")
+        model_used = chain[-1].model if chain else "brak"
+        return _ALL_FAILED_MESSAGE, False, model_used, switches
 
 
 def _build_context(

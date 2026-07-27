@@ -4,6 +4,11 @@ from typing import Literal
 from pydantic import PostgresDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Nazwany alias, bo ta sama lista providerów jest potrzebna w llm_client
+# do budowy łańcucha fallbacku. Powielony Literal rozjechałby się przy
+# dodaniu providera i rozjazd wyszedłby dopiero w runtime.
+ChatProvider = Literal["ollama", "openai", "openrouter", "gemini"]
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -29,7 +34,7 @@ class Settings(BaseSettings):
     # wariant bez zależności sieciowej i bez rate limitu w runtime — embedding
     # zapytania liczy się przy każdym pytaniu (docs/PROVIDERS.md).
     embedding_provider: Literal["ollama", "openai", "local"] = "ollama"
-    chat_provider: Literal["ollama", "openai", "openrouter", "gemini"] = "ollama"
+    chat_provider: ChatProvider = "ollama"
 
     # Ollama
     ollama_base_url: str = "http://localhost:11434"
@@ -102,6 +107,27 @@ class Settings(BaseSettings):
         if self.chat_provider == "gemini":
             return self.gemini_chat_model
         return self.ollama_llm_model
+
+    # --- Łańcuch fallbacku generacji ---
+    # Format: "provider:model,provider:model". Puste = brak fallbacku, czyli
+    # zachowanie sprzed wprowadzenia łańcucha. Pierwszym ogniwem jest ZAWSZE
+    # chat_provider + jego model, więc tu wpisuje się wyłącznie zapasowe.
+    #
+    # Po co: w jednej sesji testowej wystąpiły trzy różne klasy awarii
+    # OpenRoutera (404 wycofany model, 400 zły slug, 429 przeciążenie upstream
+    # w 3/3 próbach z backoffem). System używany bez nadzoru autora nie może
+    # zależeć od jednego darmowego endpointu.
+    #
+    # Domyślnie PUSTE także dlatego, że repo jest publiczne: łańcuch wskazujący
+    # płatny model wydawałby pieniądze każdego, kto sklonuje repo (PLAN.md,
+    # decyzja o darmowej konfiguracji domyślnej).
+    chat_fallback_chain: str = ""
+
+    # Bezpiecznik: po tylu porażkach z rzędu ogniwo jest pomijane przez
+    # chat_breaker_cooldown_s sekund. Bez tego każde zapytanie płaci pełny
+    # timeout na providerze, o którym już wiadomo, że nie odpowiada.
+    chat_breaker_failures: int = 3
+    chat_breaker_cooldown_s: float = 60.0
 
     # LLM params
     llm_temperature: float = 0.0
