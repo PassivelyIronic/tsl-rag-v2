@@ -48,6 +48,14 @@ pytanie
 
 Dwie rzeczy nieoczywiste w tym przepływie:
 
+- **Stała `rrf_k`** (Settings, domyślnie **5**) rozstrzyga spór między zgodnością obu list
+  a mocnym dowodem z jednej: `score(d) = Σ waga / (k + rank)`. Było zaszyte w kodzie 60 —
+  wartość z pracy o RRF dla wielu przebiegów na korpusie skali TREC. Przy dwóch listach
+  po 20 pozycji `k=60` spłaszcza ranking (ranga 1 → 1/61, ranga 20 → 1/80), więc pozycja
+  przestaje się liczyć i zostaje sama zgodność. Zmierzony skutek: chunk z pozycji 3 w jednej
+  liście, nieobecny w drugiej, lądował po fuzji na 10. Zmiana na 5 dała recall@5 0.938 → 0.958
+  i `fakty@5` 0.840 → 0.882, bez regresji w żadnej kategorii (`retrieval_012`).
+  Nie podnoś z powrotem bez przebiegu `run_retrieval_evals`.
 - **Wagi RRF** (`bm25_weight` / `dense_weight`) są odczytywane z Settings i muszą sumować się
   do 1.0. Zostają na 0.5/0.5 — przegląd wag po wyłączeniu rerankera pokazał, że BM25-only
   kupuje +0.010 recall@5 kosztem 0.041 MRR i psuje największą kategorię (`numeric_fact`

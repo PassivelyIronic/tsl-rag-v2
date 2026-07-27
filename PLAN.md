@@ -440,6 +440,51 @@ bo ta metryka porównuje zwrócone dokumenty z oczekiwanymi i nie zależy od `ex
       w top-5, a cap mechanicznie zwiększa ich liczbę — poprawa jest częściowo
       tautologiczna. Bez `fact_recall@k` zmiana zostałaby zaraportowana jako darmowy zysk
       i cicho pogorszyła odpowiedzi. Nie wracaj do tego pomysłu bez pomiaru faktami.
+
+- [x] **`scope` zdiagnozowane i naprawione stałą `rrf_k`** (2026-07-27). Kategoria miała
+      recall dokumentowy 0.875 przy `fakty@5` = 0.625, czyli właściwy AKT wchodził bez
+      właściwego PRZEPISU. Zawodziły 3 z 8 pytań, w dominującym wzorcu „właściwy dokument,
+      niewłaściwy chunk": `aetr::0003` (Art. 2, zakres stosowania) zawiera odpowiedź na dwa
+      z tych pytań i nie wchodził do piątki, choć inne chunki AETR wchodziły.
+
+      **Mechanizm — wada fuzji, nie kategorii:**
+
+| zapytanie | dense | bm25 | po fuzji (`k=60`) |
+|---|---|---|---|
+| „Czy do wojska stosuje się AETR?" | poza | **5** | **11** |
+| „definicja przewozu kabotażowego" | **3** | poza | **10** |
+| „Co to jest przewoz kabotazowy" | 4 | 3 | **2** |
+
+      RRF **degradował** chunk oceniony wysoko przez jedną listę, gdy druga go nie miała.
+      Powód jest arytmetyczny: przy `k=60` i dwóch listach po 20 pozycji ranga 1 dostaje
+      1/61, a ranga 20 — 1/80, czyli stosunek 1.31. Pozycja przestaje mieć znaczenie
+      i wygrywa sama zgodność list. Chunk z pozycji 3 przegrywał z chunkami, które obie
+      listy oceniły na 8 i 9. To samo tłumaczy `penalty`, gdzie dense psuł poprawny
+      ranking BM25.
+
+      **Przegląd `k` na 48 pytaniach** (żadna kategoria nie traci przy żadnym `k`):
+
+| `k` | recall@5 | recall@10 | MRR | `fakty@5` |
+|---|---|---|---|---|
+| 60 (było) | 0.938 | 0.969 | 0.874 | 0.840 |
+| 10 | 0.938 | 0.969 | 0.876 | 0.861 |
+| **5 (wybrane)** | **0.958** | 0.969 | 0.874 | **0.882** |
+| 2 | 0.969 | 0.979 | 0.874 | 0.882 |
+| 0 | 0.958 | **1.000** | 0.864 | **0.903** |
+
+      Wybrano 5, a nie szczyt: przy 48 pytaniach różnica 0.02 to jedno pytanie, czyli szum,
+      a `k ∈ [1,5]` jest płaskowyżem. Wybieranie maksimum byłoby strojeniem pod zbiór testowy.
+      Uzasadnienie jest przy tym niezależne od tych 48 pytań — `k=60` pochodzi z fuzji wielu
+      list na korpusie skali TREC, a nie dwóch list po 20 pozycji.
+
+      **Potwierdzone przebiegiem na realnym kodzie** (`retrieval_012_rrf_k5.json`, symulacja
+      to nie pomiar): recall@5 0.938 → **0.958**, `fakty@5` 0.840 → **0.882**, MRR bez zmian
+      0.874, recall@20 1.000. `scope` 0.875/0.625 → **1.000/0.750**, `numeric_fact` fakty
+      0.875 → **0.925**.
+
+      Zostaje: `scope` ma nadal `fakty@5` = 0.750, a wariant potoczny („Czy do wojska stosuje
+      się AETR?") to luka słownikowa — korpus mówi „siły zbrojne", użytkownik „wojsko".
+      Tego `k` nie naprawi.
 - [x] **Model referencyjny — ZMIERZONY** (2026-07-26). Klucz OpenRouter obsługuje modele
       płatne, więc osobny klucz OpenAI nie był potrzebny. `openai/gpt-4o-mini`, 56 pytań,
       ocena keyword-match, **koszt całego przebiegu 0.029 USD**.

@@ -34,6 +34,40 @@ def test_rrf_deduplicates_and_boosts_overlap():
     assert len(fused) == 3  # A, B, C — bez duplikatów
 
 
+def test_rrf_k_controls_agreement_vs_strong_single_evidence():
+    """
+    Sedno stałej k. "TOP" stoi na 1. miejscu w dense i nie ma go w BM25;
+    "OBA" stoi na 6. i 7. miejscu w obu listach.
+
+    Przy k=60 wygrywa OBA: 0.5/61 = 0.0082 wobec 0.5/66 + 0.5/67 = 0.0151.
+    Czyli zgodność dwóch przeciętnych pozycji bije pierwsze miejsce.
+    To był zmierzony mechanizm porażek kategorii scope — chunk z pozycji 3
+    w jednej liście lądował po fuzji na 10.
+    """
+    dense = (
+        [_fake_result("TOP")] + [_fake_result(f"d{i}") for i in range(4)] + [_fake_result("OBA")]
+    )
+    bm25 = [_fake_result(f"b{i}") for i in range(6)] + [_fake_result("OBA")]
+
+    wide = _reciprocal_rank_fusion(dense, bm25, k=60)
+    assert wide[0].chunk.chunk_id == "OBA"
+
+    narrow = _reciprocal_rank_fusion(dense, bm25, k=1)
+    assert narrow[0].chunk.chunk_id == "TOP"
+
+
+def test_rrf_default_k_matches_settings():
+    """
+    Domyślne k funkcji i wartość w Settings muszą się zgadzać — inaczej testy
+    jednostkowe mierzą inny ranking niż ścieżka zapytania.
+    """
+    from tsl_rag.core.settings import Settings
+    from tsl_rag.retrieval.retriever import _RRF_K
+
+    settings = Settings(postgres_dsn="postgresql+asyncpg://u:p@localhost:5433/db")
+    assert settings.rrf_k == _RRF_K
+
+
 def test_tokenize_lowercases_and_splits():
     tokens = _tokenize("Article 4(1): Driver's rest.")
     assert "article" in tokens

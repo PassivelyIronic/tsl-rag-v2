@@ -67,8 +67,10 @@ class RetrievalStages:
     final: list[RetrievalResult]
 
 
-# RRF constant — standard wartość z literatury
-_RRF_K = 60
+# Domyślna stała RRF, gdy funkcja wołana jest bez Settings (testy jednostkowe).
+# Ścieżka zapytania podaje ją jawnie z konfiguracji — patrz Settings.rrf_k,
+# gdzie jest też pomiar uzasadniający odejście od literaturowego 60.
+_RRF_K = 5
 
 # SQL do dense search
 _DENSE_SQL = """
@@ -230,6 +232,7 @@ class HybridRetriever:
         fused = _reciprocal_rank_fusion(
             dense_results,
             bm25_results,
+            k=settings.rrf_k,
             dense_weight=settings.dense_weight,
             bm25_weight=settings.bm25_weight,
         )

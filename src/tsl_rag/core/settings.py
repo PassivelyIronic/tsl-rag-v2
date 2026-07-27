@@ -150,6 +150,25 @@ class Settings(BaseSettings):
     bm25_weight: float = 0.5
     dense_weight: float = 0.5
 
+    # Stała k w RRF: score(d) = Σ waga / (k + rank). Rozstrzyga spór między
+    # ZGODNOŚCIĄ obu list a MOCNYM DOWODEM z jednej.
+    #
+    # Było 60 (zaszyte w kodzie, nigdy nie mierzone) — wartość z oryginalnej
+    # pracy o RRF, gdzie łączono wiele przebiegów na korpusie skali TREC.
+    # Tutaj łączymy DWIE listy po 20 pozycji, a przy k=60 ranga 1 dostaje 1/61,
+    # ranga 20 — 1/80. Stosunek 1.31 oznacza, że informacja o pozycji jest
+    # praktycznie wyrzucana i zostaje sama zgodność list. Skutek zmierzony:
+    # chunk z pozycji 3 w jednej liście, nieobecny w drugiej, lądował na 10 —
+    # poniżej chunków, które obie listy oceniły przeciętnie.
+    #
+    # Zmierzone na 48 pytaniach (przegląd k ∈ {60,30,20,10,5,2,1,0}):
+    # k=60 → recall@5 0.938, fakty@5 0.840;  k=5 → 0.958 i 0.882.
+    # Żadna kategoria nie traci; scope idzie z 0.875/0.625 na 1.000/0.750.
+    # Wybrano 5, a nie 2 (recall@5 0.969), bo różnica to jedno pytanie z 48,
+    # a k ∈ [1,5] jest płaskowyżem — wybieranie szczytu byłoby strojeniem
+    # pod zbiór testowy.
+    rrf_k: int = 5
+
     # --- Reranker ---
     # reranker_max_length: ile tokenów pary (zapytanie, chunk) widzi cross-encoder.
     # Chunki taryfikatorów to duże tabele, więc przy 512 tokenach właściwy wiersz
