@@ -33,15 +33,22 @@ w repo i to on pójdzie do K8s.
    postgresql://user:haslo@ep-cos-tam-123456.eu-central-1.aws.neon.tech/neondb?sslmode=require
    ```
 
-5. Przerób go na format, którego oczekuje `POSTGRES_DSN`:
+5. Przerób go na format, którego oczekuje `POSTGRES_DSN` — wystarczy zmienić schemat
+   na `postgresql+asyncpg://`:
 
    ```
    postgresql+asyncpg://user:haslo@ep-cos-tam-123456.eu-central-1.aws.neon.tech/neondb
    ```
 
-   **Uwaga na dwie rzeczy:** schemat to `postgresql+asyncpg://`, nie `postgresql://`,
-   a parametr `?sslmode=require` trzeba **usunąć** — asyncpg go nie rozumie
-   i przewraca się na nim przy starcie. SSL i tak jest wymuszony po stronie Neona.
+   **Weź endpoint BEZ `-pooler` w nazwie hosta.** Neon podaje domyślnie adres puli
+   (PgBouncer w trybie transakcyjnym), a `asyncpg` używa prepared statements, które
+   się z tym trybem gryzą. Zwykłe zapytania przechodzą, więc problem ujawnia się
+   nierównomiernie — przy ingeście i pod obciążeniem. Endpoint bezpośredni to ten
+   sam adres z usuniętym członem `-pooler`.
+
+   `?sslmode=require&channel_binding=require` **można zostawić** — sprawdzone
+   2026-07-29, `asyncpg` przyjmuje oba parametry i łączy się poprawnie. (Wcześniejsza
+   wersja tej instrukcji kazała je usuwać; to było twierdzenie z pamięci, nie z pomiaru.)
 
 ## Krok 2 — ingest korpusu do Neona
 
@@ -145,7 +152,8 @@ W panelu bocznym powinny świecić 🟢 przy PostgreSQL i embeddingach.
 | Objaw | Przyczyna | Co zrobić |
 |---|---|---|
 | `Extra inputs are not permitted` | Sekret bez odpowiednika w `settings.py` | Usuń nadmiarowy klucz z Secrets albo dodaj pole w `Settings` |
-| `invalid dsn` / błąd połączenia przy starcie | W DSN został `?sslmode=require` albo schemat `postgresql://` | Popraw zgodnie z krokiem 1.5 |
+| `invalid dsn` przy starcie | Schemat `postgresql://` zamiast `postgresql+asyncpg://` | Popraw zgodnie z krokiem 1.5 |
+| `prepared statement "__asyncpg_…" already exists` | DSN wskazuje endpoint `-pooler` | Użyj adresu bez `-pooler` |
 | `Korpus zaindeksowano modelem embeddingów …` | Ingest zrobiony innym modelem niż `EMBEDDING_PROVIDER` wdrożenia | Powtórz ingest (krok 2) |
 | Retrieval zwraca pustkę, brak błędu | Ingest poszedł do lokalnej bazy, nie do Neona | Sprawdź `count(*)` w Neonie |
 | Aplikacja restartuje się w kółko | Przekroczony limit pamięci | Patrz tabela wyżej |
