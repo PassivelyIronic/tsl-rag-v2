@@ -2,23 +2,18 @@ from __future__ import annotations
 
 from typing import Annotated
 
+import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from loguru import logger
 from pydantic import BaseModel, Field
 
 from tsl_rag.api.auth import verify_api_key
 from tsl_rag.core.documents import DOCUMENT_REGISTRY
-from tsl_rag.core.models import (
-    DocumentChunk,
-    DocumentType,
-    QueryResponse,
-    RetrievalRequest,
-    RetrievedChunk,
-)
-from tsl_rag.core.observability import stage
+from tsl_rag.core.models import DocumentType, QueryResponse
 from tsl_rag.core.settings import Settings, get_settings
 from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
+from tsl_rag.service import answer_query
 
 router = APIRouter(prefix="/query", tags=["query"])
 
@@ -106,58 +101,37 @@ async def query_rag(
                 f"Dopuszczalne: {[e.value for e in DocumentType]}",
             ) from None
 
-    retrieval_request = RetrievalRequest(
-        query=request.query,
-        top_k=request.top_k,
-        rerank_top_n=request.rerank_top_n,
-        filter_document_type=doc_type,
-        filter_contains_penalty=request.filter_contains_penalty,
-    )
-
-    # Span nadrzędny dla całego zapytania. Bez niego retrieval i generacja
-    # trafiałyby do dwóch osobnych śladów, a `trace_id` w logach nie spinałby
-    # jednego pytania w całość — czyli bramka Fazy 4 nie byłaby spełniona.
-    # Długość zapytania zamiast jego treści: atrybut spanu z pytaniem
-    # użytkownika wyciekłby do kolektora razem z danymi, których nie musi znać.
-    with stage("query", query_length=len(request.query), debug=request.debug):
-        try:
-            results = await retriever.retrieve(retrieval_request)
-        except Exception as exc:
+    # Logika wspólna z trybem in-process (`tsl_rag.service`), żeby UI na
+    # Streamlit Cloud i API nie miały dwóch osobnych, rozjeżdżających się kopii.
+    # Router odpowiada wyłącznie za tłumaczenie wyjątków na kody HTTP.
+    try:
+        return await answer_query(
+            request.query,
+            retriever=retriever,
+            generator=generator,
+            top_k=request.top_k,
+            rerank_top_n=request.rerank_top_n,
+            filter_document_type=doc_type,
+            filter_contains_penalty=request.filter_contains_penalty,
+            include_chunks=request.debug,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # Rozdzielenie 503 od 502 po stronie retrievalu i generacji straciłoby
+        # sens przy wspólnej funkcji, więc rozstrzyga typ wyjątku: problem
+        # z bazą to niegotowość, reszta to awaria generacji.
+        if isinstance(exc, (asyncpg.PostgresError, OSError)):
             logger.error(f"Retrieval nieudany: {exc}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=_MSG_NOT_READY,
             ) from exc
-
-        if not results:
-            logger.warning(f"Brak wyników retrievalu dla: '{request.query[:60]}'")
-
-        try:
-            response = await generator.generate(request.query, results)
-        except Exception as exc:
-            logger.error(f"Generacja nieudana ({settings.active_llm_model}): {exc}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=_MSG_GENERATION_FAILED,
-            ) from exc
-
-    if request.debug:
-        response.retrieved_chunks = [
-            RetrievedChunk(
-                chunk=DocumentChunk(
-                    chunk_id=r.chunk.chunk_id,
-                    content=r.chunk.text,
-                    metadata=r.chunk.metadata,
-                ),
-                dense_score=r.dense_score,
-                bm25_score=r.bm25_score,
-                hybrid_score=r.rrf_score,
-                rerank_score=r.rerank_score,
-            )
-            for r in results
-        ]
-
-    return response
+        logger.error(f"Generacja nieudana ({settings.active_llm_model}): {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=_MSG_GENERATION_FAILED,
+        ) from exc
 
 
 @router.get("/documents")

@@ -791,7 +791,33 @@ Dwa wnioski:
       `/health`, `/ready` i `/metrics` zostają otwarte: probe'y i scraper nie mogą
       zależeć od sekretu aplikacji. UI wysyła ten sam sekret ze zmiennej `API_PASSWORD`
       i tłumaczy 401 na komunikat po polsku.
-- [ ] Deployment: HF Spaces jako ścieżka domyślna
+- [x] **Deployment: Streamlit Community Cloud + Neon** (2026-07-28, przygotowany).
+      **HF Spaces odpadło**: wariant z Dockerem jest tam płatny (sprawdzone przez
+      właściciela repo na żywym ekranie), a Space i tak nie utrzymałby bazy — jeden
+      kontener z ulotnym dyskiem, więc Postgres musiałby stać osobno tak czy inaczej.
+
+      Streamlit Cloud uruchamia JEDEN proces, więc UI nie ma dokąd wysłać żądania HTTP.
+      Stąd `UI_MODE=inprocess` i wspólna warstwa `tsl_rag.service.answer_query`, którą
+      wołają teraz oba wejścia — router API i UI. Bez tej warstwy `ui.py` musiałby mieć
+      własną kopię logiki zapytania, która rozjechałaby się przy pierwszej zmianie,
+      i to cicho, bo obie „działają". Rozdział API/UI zostaje w mocy: `docker/Dockerfile`
+      z osobnym FastAPI jest dalej w repo i to on idzie do K8s.
+
+      `requirements.txt` wygenerowany z `uv.lock` — Streamlit Cloud nie czyta ani
+      locka, ani `pyproject.toml`, więc po zmianie zależności trzeba go wygenerować
+      od nowa, inaczej wdrożenie zostaje w tyle bez ostrzeżenia. Wariant CPU torcha
+      przypięty jawnie przez `--extra-index-url`.
+
+      **Zweryfikowane uruchomieniem** trybu in-process na lokalnej bazie: poprawna
+      treść, cytowanie, 5 chunków w kontekście, 3.7 s, drugie pytanie w tym samym
+      procesie też przechodzi (pętla zdarzeń i pool asyncpg przeżywają kolejne
+      wywołania — `asyncio.run()` per pytanie zamykałby pool razem z pętlą).
+
+      Instrukcja krok po kroku: `docs/DEPLOY.md`. Zostaje do wykonania po stronie
+      właściciela repo: konto Neon, ingest do Neona, push na GitHub, konfiguracja
+      sekretów na Streamlit Cloud.
+
+- [ ] ~~HF Spaces~~ — odrzucone, patrz wyżej
 - [x] **Instrukcja dla użytkownika końcowego** — `docs/INSTRUKCJA.md`, po polsku,
       bez żargonu: jak pytać, jak czytać cytowania, dlaczego odmowa jest poprawnym
       zachowaniem, i tabela „co widzisz → co zrobić" dla komunikatów błędów

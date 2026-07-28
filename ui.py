@@ -3,7 +3,13 @@ import os
 
 import httpx
 import streamlit as st
+import ui_backend
 from loguru import logger
+
+# Sekrety Streamlit Cloud → zmienne środowiskowe. MUSI być przed pierwszym
+# get_settings(), bo Settings czyta wyłącznie ze środowiska, a jego wynik
+# jest cache'owany.
+ui_backend.bridge_secrets_to_env()
 
 # ── Page config ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -12,6 +18,12 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# Tryb pracy. "inprocess" = retrieval i generacja w tym samym procesie co UI —
+# jedyny wariant możliwy na Streamlit Community Cloud, gdzie nie ma drugiego
+# serwisu. Domyślnie "api", żeby uruchomienie lokalne dalej korzystało
+# z osobnego FastAPI (PLAN.md: rozdział API/UI zostaje w mocy).
+INPROCESS = os.getenv("UI_MODE", "api").lower() == "inprocess"
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
 API_URL = f"{API_BASE_URL}/query"
@@ -172,9 +184,12 @@ with st.sidebar:
 
     # Dynamiczne pobieranie listy dokumentów z backendu
     try:
-        docs_resp = httpx.get(f"{API_URL}/documents", timeout=3.0)
-        if docs_resp.status_code == 200:
-            docs = docs_resp.json()
+        if INPROCESS:
+            docs, ok = ui_backend.documents(), True
+        else:
+            docs_resp = httpx.get(f"{API_URL}/documents", timeout=3.0)
+            docs, ok = (docs_resp.json(), True) if docs_resp.status_code == 200 else ({}, False)
+        if ok:
             for doc_id, title in docs.items():
                 st.markdown(
                     f'<div style="font-family:IBM Plex Mono,monospace;font-size:0.72rem;'
@@ -198,7 +213,18 @@ with st.sidebar:
     # Nazwy providerów bierzemy z odpowiedzi, a nie zaszywamy w UI, bo
     # EMBEDDING_PROVIDER i CHAT_PROVIDER są niezależnie przełączalne.
     try:
-        ready = httpx.get(f"{API_BASE_URL}/ready", timeout=5.0).json()
+        if INPROCESS:
+            # Bez API nie ma /ready, więc stan bierzemy wprost z silnika:
+            # samo jego utworzenie oznacza, że pool i model wstały.
+            engine = ui_backend.get_engine()
+            s = engine["settings"]
+            ready = {
+                "checks": {"postgres": "ok", "embeddings": "ok"},
+                "embedding_provider": s.embedding_provider,
+                "chat_model": s.active_llm_model,
+            }
+        else:
+            ready = httpx.get(f"{API_BASE_URL}/ready", timeout=5.0).json()
         checks = ready.get("checks", {})
         pg = "🟢" if checks.get("postgres") == "ok" else "🔴"
         emb = "🟢" if checks.get("embeddings") == "ok" else "🔴"
@@ -299,27 +325,33 @@ if prompt := st.chat_input("Zadaj pytanie o przepisach transportowych UE…"):
 
     with st.spinner("Przeszukuję przepisy…"):
         try:
-            resp = httpx.post(
-                API_URL,
-                json={
-                    "query": prompt,
-                    "top_k": top_k,
-                    "rerank_top_n": rerank_top_n,
-                    "debug": True,
-                },
-                headers=AUTH_HEADERS,
-                timeout=120.0,
-            )
-
-            if resp.status_code == 401:
-                st.error(
-                    "System nie przyjął hasła dostępu. Jeśli widzisz to po raz pierwszy, "
-                    "skontaktuj się z osobą, która udostępniła Ci ten adres."
+            if INPROCESS:
+                # Bez HTTP: ta sama funkcja, którą woła router API.
+                data = ui_backend.ask(prompt, top_k=top_k, rerank_top_n=rerank_top_n, debug=True)
+                resp = None
+            else:
+                resp = httpx.post(
+                    API_URL,
+                    json={
+                        "query": prompt,
+                        "top_k": top_k,
+                        "rerank_top_n": rerank_top_n,
+                        "debug": True,
+                    },
+                    headers=AUTH_HEADERS,
+                    timeout=120.0,
                 )
-                st.stop()
 
-            if resp.status_code == 200:
-                data = resp.json()
+                if resp.status_code == 401:
+                    st.error(
+                        "System nie przyjął hasła dostępu. Jeśli widzisz to po raz pierwszy, "
+                        "skontaktuj się z osobą, która udostępniła Ci ten adres."
+                    )
+                    st.stop()
+
+            if resp is None or resp.status_code == 200:
+                if resp is not None:
+                    data = resp.json()
                 answer = data.get("answer", "Brak odpowiedzi.")
                 citations = data.get("citations", [])
                 chunks = data.get("retrieved_chunks", [])
