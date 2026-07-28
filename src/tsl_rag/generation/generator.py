@@ -178,7 +178,7 @@ class RAGGenerator:
 
         Pusta treść jest traktowana jak awaria i przełącza na kolejne ogniwo.
         Powód jest zmierzony: nvidia/nemotron-nano-9b-v2:free zwrócił pustkę
-        w 6 z 21 pytań (run_015), bo łańcuch rozumowania zjadał cały budżet
+        w 2 z 21 pytań (run_015), bo łańcuch rozumowania zjadał cały budżet
         max_tokens. Zwrócenie tej pustki użytkownikowi, gdy skonfigurowano
         model zapasowy, byłoby marnowaniem odporności, którą się ma.
         """

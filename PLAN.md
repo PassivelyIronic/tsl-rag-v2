@@ -124,8 +124,9 @@ chunki mają tę samą flagę. Realna przyczyna to dense (MRR 0.352 na tej kateg
   per etap, metryki Prometheusa na `/metrics`, logi z `trace_id`. Dashboard zostaje
   poza repo, bo Grafana należy do klastra
 - Brak testów integracyjnych (`tests/integration`, `tests/e2e` są puste)
-- Darmowy model generacji: 17.3 s średnio i **6 pustych odpowiedzi na 21 pytań** (reasoning
-  zjada budżet) — zmierzone w `run_015`. To nie jest „sporadycznie", to blisko co trzecie pytanie
+- ~~Darmowy model generacji: 17.3 s i puste odpowiedzi~~ — **rozwiązane 2026-07-28**
+  przez `LLM_SYSTEM_PREFIX=/no_think`: latencja 25.7 s → 5.0 s (mediana 25.9 → 4.0 s),
+  zero pustych odpowiedzi. Patrz Faza 3
 - `--use-judge` niesprawny — klucz Gemini ma zerowy limit
 - Repo **nie ma remote'a** — 27 commitów leży lokalnie, `tsl-rag-v2` nieutworzone na GitHubie
 
@@ -145,30 +146,12 @@ Kolejność, w mojej ocenie:
 
 1. **Push na GitHub** — utworzyć publiczne `tsl-rag-v2`, dopiąć remote, wypchnąć historię.
    Jedyna rzecz, która blokuje się na czynności po stronie właściciela repo.
-2. **Nowy baseline generacji na 56 pytaniach** — darmowy limit OpenRoutera resetuje się
-   o północy UTC, a `run_013` padł po 3 pytaniach. Ten przebieg jest potrzebny jako punkt
-   odniesienia dla Fazy 3 i da też pierwszy pełny wynik semantyczny (rekord zapisuje
-   teraz całe odpowiedzi, nie 200 znaków).
-3. ~~Sprawdzić `LLM_REASONING_EFFORT=none` na nemotronie~~ → **rozstrzygnięte 2026-07-27:
-   parametr na tym modelu NIE DZIAŁA**, mechanizmem jest `LLM_SYSTEM_PREFIX=/no_think`.
-   Szczegóły niżej. **Zostaje jedno zadanie: powtórzyć przebieg `run_016`**, bo pierwszy
-   był nieważny (Git Bash zmangował prefiks w ścieżkę). Komenda, po resecie limitu:
-
-   ```powershell
-   # PowerShell, nie Git Bash — patrz CLAUDE.md §8
-   $env:CHAT_PROVIDER="openrouter"; $env:LLM_SYSTEM_PREFIX="/no_think"
-   uv run python -m evals.run_evals --limit 21 --sleep 2 `
-     --output evals/results/run_016_nemotron21_nothink.json
-   ```
-
-   **UWAGA — `run_015` przestał być ważnym punktem odniesienia.** Powstał przy `rrf_k = 60`,
-   a tego samego dnia stała zmieniła się na 5 (recall@5 0.938 → 0.958, `fakty@5` 0.840 →
-   0.882). Porównanie jutrzejszego `/no_think` z `run_015` mieszałoby dwie zmiany naraz:
-   prefiks systemowy i inny retrieval. **Trzeba przebiec OBA warianty od nowa**, 21+21 = 42
-   wywołania, co mieści się w dziennym limicie 50. `run_015` zostaje w repo jako pomiar
-   latencji i pustych odpowiedzi przy `k=60`, nie jako baseline dla prefiksu.
-
-   `Settings` odrzuca dziś zmangowaną wartość wyjątkiem, więc pomyłka się nie powtórzy cicho.
+2. **Nowy baseline generacji na 56 pytaniach** — z `/no_think` i przy `rrf_k=5`.
+   56 wywołań przy dziennym limicie 50, więc albo w dwóch dobach, albo na płatnym
+   `gpt-4o-mini` za ~0.03 USD.
+3. ~~Sprawdzić `LLM_REASONING_EFFORT=none` na nemotronie~~ → **zamknięte**. Parametr
+   na tym modelu nie działa, mechanizmem jest `LLM_SYSTEM_PREFIX=/no_think`, a efekt
+   został zmierzony parowanym przebiegiem 2026-07-28 (tabela niżej).
 4. **Faza 3: łańcuch fallbacku** z płatnym modelem jako pierwszym ogniwem (decyzja niżej).
 
 ### Rozumowanie nemotrona: parametr API nie działa, token w promptcie działa
@@ -202,14 +185,49 @@ warstwowo (wszystkie 6 kategorii), bez prefiksu, 21/21 bez błędu providera:
 | `retrieval_recall` | 0.929 |
 | latencja średnia | 17.3 s |
 | `refusal_precision` | 1.000 |
-| puste odpowiedzi (`has_answer=False`) | 6 z 21 |
+| puste odpowiedzi (faktyczne) | 2 z 21 |
+| `has_answer=False` łącznie | 6 z 21 (4 to poprawne odmowy `out_of_scope`) |
 
-**Efekt `/no_think` pozostaje NIEZMIERZONY.** Przebieg porównawczy z 2026-07-27 jest
-nieważny: Git Bash zamienił `/no_think` na `C:/Program Files/Git/no_think`, więc do system
-promptu poszła ścieżka. Plik zachowany jako `run_016_NIEWAZNY_prefiks_zmangowany.json`
-— wyłącznie jako ślad pomyłki, nie jako pomiar. Nie cytuj z niego liczb: przy zaśmieconym
-promptcie spadła precyzja cytowań i `refusal_precision`, czego nie da się odróżnić od
-efektu samego wyłączenia rozumowania.
+Pierwszy przebieg porównawczy (2026-07-27) był **nieważny**: Git Bash zamienił `/no_think`
+na `C:/Program Files/Git/no_think`, więc do system promptu poszła ścieżka. Plik zachowany
+jako `run_016_NIEWAZNY_prefiks_zmangowany.json` wyłącznie jako ślad pomyłki. Nie cytuj
+z niego liczb.
+
+### `/no_think` ZMIERZONE — 5× szybciej i lepiej w każdej metryce treści
+
+Parowany przebieg 2026-07-28, **te same 21 pytań**, ten sam `rrf_k=5`, jedyna różnica
+to `LLM_SYSTEM_PREFIX`. Oba 21/21 bez błędu providera
+(`run_017_nemotron21_k5_baseline.json` i `run_018_nemotron21_k5_nothink.json`):
+
+| Metryka | bez prefiksu | `/no_think` | delta |
+|---|---|---|---|
+| latencja średnia | 25.7 s | **5.0 s** | **−20.6 s** |
+| latencja mediana | 25.9 s | **4.0 s** | **−21.9 s** |
+| `answer_score` (keyword) | 0.532 | **0.627** | +0.095 |
+| `semantic_score` | 0.722 | **0.810** | +0.088 |
+| `citation_precision` | 0.690 | **0.786** | +0.096 |
+| `citation_hit_rate` | 0.786 | 0.762 | −0.024 |
+| `retrieval_recall` | 0.929 | 0.929 | 0.000 |
+| `refusal_precision` | 1.000 | 1.000 | 0.000 |
+| `false_refusal_rate` | 0.000 | 0.000 | 0.000 |
+| puste odpowiedzi | 0 | 0 | — |
+
+**Wniosek: `/no_think` to czysty zysk na tym modelu.** Pięciokrotne przyspieszenie
+nie kosztuje jakości — trzy z czterech metryk treści rosną o ~0.09, a jedyny spadek
+(`citation_hit_rate`, −0.024) to pół pytania z 21, czyli poniżej zmierzonego rozrzutu
+metryk generacji (0.133 między przebiegami identycznego kodu). Odmowy zachowują się
+identycznie, więc przyspieszenie nie wzięło się z tego, że model przestał myśleć nad
+tym, czy w ogóle wie.
+
+**Rekomendacja wdrożeniowa:** `LLM_SYSTEM_PREFIX=/no_think` w `.env` wdrożenia, o ile
+modelem generacji jest nemotron. Domyślna wartość w repo zostaje pusta, bo token jest
+specyficzny dla tej rodziny modeli i wysłany gdzie indziej zostaje w promptcie jako śmieć.
+
+**Sprostowanie do wcześniejszego zapisu:** raportowałem „6 pustych odpowiedzi na 21 pytań"
+w `run_015`. To było błędne — policzyłem `has_answer=False`, a w tym polu mieszczą się
+też **poprawne odmowy**. Faktycznie pustych odpowiedzi było **2 z 21**, a pozostałe 4 to
+odmowy na pytania `out_of_scope`, punktowane na 1.000. Mechanizm „pustka → przełącz ogniwo"
+w Fazie 3 zostaje słuszny, ale częstość była zawyżona trzykrotnie.
 
 **Flaga `--limit` w `run_evals`** dobiera pytania **warstwowo po kategoriach**, nie
 „pierwsze N" — pierwsze 21 pytań datasetu to wyłącznie `numeric_fact`, `procedure`
@@ -635,7 +653,7 @@ z backoffem). System używany bez nadzoru autora nie może zależeć od jednego 
       Klasyfikacja awarii w `generation/fallback.py`: `400`/`404` jako deterministyczne
       (ten sam request da ten sam błąd, więc bez retry), `429`/`5xx`/timeout jako
       przejściowe, `401`/`403` jako konfiguracja. Przejście dalej następuje we wszystkich
-      przypadkach — także przy **pustej odpowiedzi**, bo nemotron zwracał ją w 6 z 21
+      przypadkach — także przy **pustej odpowiedzi**, bo nemotron zwracał ją w 2 z 21
       pytań (`run_015`), a oddanie pustki użytkownikowi przy skonfigurowanym modelu
       zapasowym marnowałoby posiadaną odporność.
 

@@ -101,7 +101,7 @@ async def test_switches_on_every_failing_status(fake_client, code):
 
 async def test_empty_answer_triggers_fallback(fake_client):
     """
-    Zmierzone: nemotron zwrócił pustą treść w 6 z 21 pytań (run_015), bo
+    Zmierzone: nemotron zwrócił pustą treść w 2 z 21 pytań (run_015), bo
     rozumowanie zjadało budżet max_tokens. Oddanie tej pustki użytkownikowi
     przy skonfigurowanym modelu zapasowym marnowałoby posiadaną odporność.
     """
