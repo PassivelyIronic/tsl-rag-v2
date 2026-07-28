@@ -1,0 +1,29 @@
+# Wszystko, co nie jest potrzebne do zbudowania i uruchomienia API.
+# Bez tego pliku kontekst budowania to całe repo razem z .venv (~3 GB),
+# korpusem PDF i wynikami ewaluacji.
+.venv/
+.git/
+.github/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.claude/
+
+# Sekrety — nigdy do obrazu
+.env
+*.key
+
+# Dane i wyniki: korpus wchodzi do bazy przez ingest, nie do obrazu
+data/
+evals/results/
+notebooks/
+tests/
+
+# Dokumentacja i narzędzia deweloperskie
+docs/
+PLAN.md
+CLAUDE.md
+Makefile
+ui.py

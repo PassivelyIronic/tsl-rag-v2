@@ -127,9 +127,10 @@ jest przełączony. Skrypt `compare_models.py` nadpisuje `CHAT_PROVIDER` w locie
 **Zawsze `uv run ...`**, nigdy gołe `python` — na Windows aktywna conda `(base)` przechwyci wywołanie.
 
 ```powershell
-uv sync                                                    # setup środowiska
+uv sync                                                    # setup środowiska (API + eval)
+uv sync --extra ingest                                     # dodatkowo parsery PDF — TYLKO do ingestu
 docker compose up -d                                       # Postgres + pgvector (host: 5433)
-uv run python -m tsl_rag.ingestion.cli ingest-all data/raw/ # ingest (oczekiwane: 13/14, 1 duplikat)
+uv run python -m tsl_rag.ingestion.cli ingest-all data/raw/ # ingest (wymaga --extra ingest; 13/14, 1 duplikat)
 uv run python -m tsl_rag.api.main                          # FastAPI na :8000
 # /health (liveness), /ready (readiness), /metrics (Prometheus)
 # Podgląd śladu bez kolektora: OTEL_EXPORTER=console; logi JSON: LOG_JSON=true

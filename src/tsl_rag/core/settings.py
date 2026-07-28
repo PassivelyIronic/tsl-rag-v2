@@ -162,6 +162,13 @@ class Settings(BaseSettings):
     # wysłane do modelu, który go nie zna, zostaje w promptcie jako śmieć.
     llm_system_prefix: str = ""
 
+    # --- Dostęp do API ---
+    # Puste = autoryzacja WYŁĄCZONA (uruchomienie lokalne, testy). Ustawione =
+    # /query wymaga nagłówka X-API-Key. Publiczny URL bez hasła to zaproszenie
+    # do wypalenia dziennych limitów providera przez pierwszego bota, który go
+    # znajdzie — a limity są dzienne, nie kwotowe, więc nie widać tego w rachunku.
+    api_password: SecretStr | None = None
+
     # --- Observability ---
     # Domyślnie "none": spany powstają, ale nigdzie nie lecą. Aplikacja dla
     # jednego użytkownika nie może wymagać działającego Jaegera do startu,

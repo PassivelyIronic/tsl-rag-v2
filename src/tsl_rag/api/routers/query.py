@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from tsl_rag.api.auth import verify_api_key
+from tsl_rag.core.documents import DOCUMENT_REGISTRY
 from tsl_rag.core.models import (
     DocumentChunk,
     DocumentType,
@@ -82,7 +84,7 @@ def get_generator(request: Request) -> RAGGenerator:
     return generator
 
 
-@router.post("", response_model=QueryResponse)
+@router.post("", response_model=QueryResponse, dependencies=[Depends(verify_api_key)])
 async def query_rag(
     request: QueryRequest,
     retriever: Annotated[HybridRetriever, Depends(get_retriever)],
@@ -164,6 +166,4 @@ async def get_documents() -> dict[str, str]:
     Zwraca listę obsługiwanych dokumentów, żeby UI nie miało ich zaszytych
     na sztywno. Klucze to identyfikatory używane w cytowaniach.
     """
-    from tsl_rag.ingestion.cli import DOCUMENT_REGISTRY
-
     return {doc_id.lower(): meta["title"] for doc_id, meta in DOCUMENT_REGISTRY.items()}

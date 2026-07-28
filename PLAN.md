@@ -746,14 +746,55 @@ Dwa wnioski:
 
 ## Faza 5 — Deployment dla użytkownika końcowego
 
-- [ ] `docker/Dockerfile` produkcyjny, multi-stage, bez dev-dependencies
+- [x] **`docker/Dockerfile` produkcyjny** (2026-07-28): multi-stage, `uv sync --no-dev`,
+      użytkownik bez roota (uid 1001), `HEALTHCHECK` na `/health` (nie `/ready` — ten
+      odpytuje bazę, więc jako healthcheck Dockera restartowałby kontener przy chwilowo
+      niedostępnej bazie; readiness należy do orkiestratora). Wagi modelu embeddingów
+      **nie są wbudowane w obraz** — pobierają się do wolumenu `HF_HOME`, bo obraz z wagami
+      to ~2 GB do wypchnięcia przy zmianie jednej linijki kodu.
+
+      **Zależności ingestu wydzielone do extra `ingest`.** `unstructured[pdf]` wciągał
+      do obrazu API `torchvision`, `opencv` i `spacy` — stos wizyjny, którego API nie
+      uruchamia, bo ingest jest ręczny i odpalany lokalnie. Wymagało to przeniesienia
+      `DOCUMENT_REGISTRY` z `ingestion/cli.py` do `core/documents.py`, bo `/query/documents`
+      importował go stamtąd i ciągnął cały moduł ingestu razem z parserami PDF.
+      Ingest wymaga teraz `uv sync --extra ingest`.
+
+      **`torch` przypięty do wariantu CPU na Linuksie.** Domyślne koło z PyPI to build CUDA:
+      w obrazie dawało 2725 MB pakietów `nvidia/*` i 691 MB `triton`, przy `torch.cuda
+      .is_available() == False`. Musi być zadeklarowany **wprost** w `dependencies` —
+      `[tool.uv.sources]` działa tylko na zależności bezpośrednie, a torch wchodzi
+      tranzytywnie przez `sentence-transformers`, więc bez tego wpisu przypięcie jest
+      po cichu ignorowane.
+
+      Stan końcowy, zweryfikowany uruchomieniem kontenera: `/health` 200, `/ready` zielone
+      na wszystkich trzech sprawdzeniach (postgres, retriever, embeddings), `/metrics` 200,
+      `/query` bez hasła 401 z komunikatem po polsku, proces jako uid 1001, logi JSON.
+      Obraz 2.59 GB wg `docker images`, `site-packages` 1805 MB, zero pakietów
+      `nvidia/*`, `triton`, `torchvision`, `opencv`, `spacy`, `unstructured`.
+
+      **Pułapka pomiarowa:** `docker image inspect .Size` na Docker Desktop pokazuje
+      rozmiar SKOMPRESOWANY (530 MB) i nie zgadza się z kolumną SIZE w `docker images`
+      (2.59 GB). Przy raportowaniu trzymaj się jednego źródła.
+
+      **Weryfikuj URUCHOMIENIEM, nie buildem.** Obraz budował się poprawnie i wywracał
+      przy starcie na `RuntimeError: operator torchvision::nms does not exist` —
+      `torchvision` z PyPI był skompilowany pod inny build torcha. Sam `docker build`
+      tego nie wykrywa.
 - [ ] Streaming odpowiedzi albo informacja o postępie — 19 s bez sygnału zwrotnego
       wygląda jak zawieszenie
 - [ ] Cache odpowiedzi na powtarzające się pytania (oszczędza limity i skraca latencję)
-- [ ] Podstawowa autoryzacja (hasło w zmiennej środowiskowej wystarczy — publiczny URL bez niej
-      to zaproszenie do wypalenia darmowych limitów)
+- [x] **Podstawowa autoryzacja** (2026-07-28): `API_PASSWORD` + nagłówek `X-API-Key`
+      na `/query`. Puste = wyłączona (uruchomienie lokalne, testy). Porównanie przez
+      `secrets.compare_digest`, nie `==` — zwykłe porównanie kończy się na pierwszym
+      różniącym się bajcie, więc czas odpowiedzi zdradza, ile znaków się zgadza.
+      `/health`, `/ready` i `/metrics` zostają otwarte: probe'y i scraper nie mogą
+      zależeć od sekretu aplikacji. UI wysyła ten sam sekret ze zmiennej `API_PASSWORD`
+      i tłumaczy 401 na komunikat po polsku.
 - [ ] Deployment: HF Spaces jako ścieżka domyślna
-- [ ] Krótka instrukcja dla użytkownika końcowego, po polsku, bez żargonu
+- [x] **Instrukcja dla użytkownika końcowego** — `docs/INSTRUKCJA.md`, po polsku,
+      bez żargonu: jak pytać, jak czytać cytowania, dlaczego odmowa jest poprawnym
+      zachowaniem, i tabela „co widzisz → co zrobić" dla komunikatów błędów
 
 **Gate:** osoba nietechniczna otwiera URL i uzyskuje poprawną odpowiedź z cytowaniem,
 bez obecności autora. **Po tej fazie cel podstawowy jest spełniony** — niezależnie od Fazy 6.

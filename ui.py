@@ -16,6 +16,12 @@ st.set_page_config(
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
 API_URL = f"{API_BASE_URL}/query"
 
+# Hasło do API. Puste = API ma autoryzację wyłączoną (uruchomienie lokalne).
+# W publicznym wdrożeniu ta sama wartość co API_PASSWORD po stronie backendu —
+# UI jest tu klientem API, nie miejscem logowania użytkownika.
+API_PASSWORD = os.getenv("API_PASSWORD", "")
+AUTH_HEADERS = {"X-API-Key": API_PASSWORD} if API_PASSWORD else {}
+
 # ── Custom CSS ─────────────────────────────────────────────────────────────
 st.markdown(
     """
@@ -301,8 +307,16 @@ if prompt := st.chat_input("Zadaj pytanie o przepisach transportowych UE…"):
                     "rerank_top_n": rerank_top_n,
                     "debug": True,
                 },
+                headers=AUTH_HEADERS,
                 timeout=120.0,
             )
+
+            if resp.status_code == 401:
+                st.error(
+                    "System nie przyjął hasła dostępu. Jeśli widzisz to po raz pierwszy, "
+                    "skontaktuj się z osobą, która udostępniła Ci ten adres."
+                )
+                st.stop()
 
             if resp.status_code == 200:
                 data = resp.json()
