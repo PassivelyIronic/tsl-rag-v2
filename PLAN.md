@@ -128,7 +128,7 @@ chunki mają tę samą flagę. Realna przyczyna to dense (MRR 0.352 na tej kateg
   przez `LLM_SYSTEM_PREFIX=/no_think`: latencja 25.7 s → 5.0 s (mediana 25.9 → 4.0 s),
   zero pustych odpowiedzi. Patrz Faza 3
 - `--use-judge` niesprawny — klucz Gemini ma zerowy limit
-- Repo **nie ma remote'a** — 27 commitów leży lokalnie, `tsl-rag-v2` nieutworzone na GitHubie
+- ~~Repo nie ma remote'a~~ — **wypchnięte 2026-07-29** na `github.com/PassivelyIronic/tsl-rag-v2` (38 commitów). Historia sprawdzona przed pushem: `.env` nigdy nie był commitowany, brak kluczy API i hasła bazy
 
 ---
 
@@ -144,8 +144,7 @@ uv run pytest -m unit                          # 77 testów
 
 Kolejność, w mojej ocenie:
 
-1. **Push na GitHub** — utworzyć publiczne `tsl-rag-v2`, dopiąć remote, wypchnąć historię.
-   Jedyna rzecz, która blokuje się na czynności po stronie właściciela repo.
+1. ~~Push na GitHub~~ — **zrobione 2026-07-29**, `github.com/PassivelyIronic/tsl-rag-v2`.
 2. **Nowy baseline generacji na 56 pytaniach** — z `/no_think` i przy `rrf_k=5`.
    56 wywołań przy dziennym limicie 50, więc albo w dwóch dobach, albo na płatnym
    `gpt-4o-mini` za ~0.03 USD.
