@@ -282,7 +282,7 @@ Zrobione:
 
 Zostaje:
 
-- [ ] **Usunąć miękkie łączniki z tekstu przy ingeście.** Ekstrakcja z PDF-a zostawia
+- [x] **Miękkie łączniki usunięte** (`normalize_pdf_text`) — zweryfikowane na Neonie 2026-07-29: zero wystąpień U+00AD w 438 chunkach. Historyczny opis problemu: Ekstrakcja z PDF-a zostawia
       U+00AD w miejscach podziału wiersza: **1258 wystąpień w 307 z 444 chunków (69%)**,
       we wszystkich rozporządzeniach UE. Korpus zawiera więc `przynaj­ mniej`, `wyko­ rzystać`,
       `tygodnio­ wego`. Skutki: tokenizer BM25 robi z jednego słowa dwa bezużyteczne tokeny
@@ -290,7 +290,7 @@ Zostaje:
       dostaje w kontekście tekst z rozerwanymi słowami. **To jest prawdopodobnie większa
       dźwignia niż składanie diakrytyków** i dotyczy dokumentów najczęściej pytanych.
       Wymaga ponownego ingestu i pomiaru przed/po — czyli narzędzia poniżej
-- [ ] **`evals/run_retrieval_evals.py`** — ewaluacja samego retrievalu, bez wywołania LLM:
+- [x] **`evals/run_retrieval_evals.py` — ZROBIONE.** Ewaluacja samego retrievalu, bez wywołania LLM:
       `recall@k` dla `k ∈ {5, 10, 20}`, `MRR`, metryki osobno **przed** i **po** rerankingu.
       **To jest teraz zadanie o najwyższym priorytecie w tej fazie** — pomiar wariancji pokazał,
       że tylko metryki retrievalu są stabilne, więc tylko one mogą bramkować. Dodatkowo:
@@ -587,7 +587,7 @@ też kandydatem na realną poprawę jakości. Narzędzie do zmierzenia tego istn
 (`run_retrieval_evals.py`), a `bge-m3` jest już pobrany lokalnie w Ollamie (1.16 GB),
 więc porównanie da się zrobić bez pobierania wag.
 
-- [ ] Rozszerzyć `embedding_provider` o `"local"` (`sentence-transformers`, in-process, CPU)
+- [x] **Rozszerzone o `"local"`** (`sentence-transformers`, in-process, CPU) — domyślne od Fazy 2
 - [ ] A/B kandydatów metrykami z Fazy 1, nie „na oko":
 
 | Model | Wymiary | Re-ingest? | Uwaga |
@@ -596,7 +596,7 @@ więc porównanie da się zrobić bez pobierania wag.
 | `intfloat/multilingual-e5-base` | 768 | nie — zgodne wymiary | jedyny bez migracji schematu |
 | `BAAI/bge-m3` | 1024 | **tak** + migracja `vector(n)` | **już pobrany w Ollamie (1.16 GB)**, więc da się porównać szybciej niż zakładano |
 
-- [ ] Zmierzyć czas embeddingu jednego zapytania na CPU (cel: <1 s)
+- [x] **Czas embeddingu zmierzony spanami (Faza 4): 84 ms na rozgrzanym procesie**, 7.7 s przy zimnym starcie (wczytanie wag). Cel <1 s spełniony z zapasem
 - [ ] Migracja `docker/init.sql` + skrypt migracyjny, jeśli wygra `bge-m3`
 - [ ] Opcjonalnie Cloudflare BGE jako `embedding_provider="cloudflare"` — zapas przy
       ograniczonej pamięci targetu
@@ -672,7 +672,7 @@ z backoffem). System używany bez nadzoru autora nie może zależeć od jednego 
       pokrywają klasyfikację, budowę łańcucha, bezpiecznik i samą pętlę przełączania
       na atrapach — ścieżki awaryjne nie występują w normalnym przebiegu, więc muszą
       być wymuszone testem, a nie wypatrywane w produkcji.
-- [ ] **Puste odpowiedzi — zdiagnozowane, do naprawy pomiarem.** `nemotron-nano-9b-v2:free`
+- [x] **Puste odpowiedzi — NAPRAWIONE** przez `LLM_SYSTEM_PREFIX=/no_think` (zmierzone 2026-07-28, tabela w tej fazie). Historia diagnozy: `nemotron-nano-9b-v2:free`
       jest modelem rozumującym: w zmierzonym wywołaniu **455 z 621 tokenów wyjścia poszło
       na reasoning**. Przy `LLM_MAX_TOKENS=1024` długi łańcuch rozumowania zjada cały budżet
       i zwraca pustą treść — to wyjaśnia „pustą odpowiedź mimo 37 s", odnotowaną jeszcze
