@@ -44,7 +44,10 @@ jobs:
         run: uv python install
 
       - name: Synchronizacja zależności
-        run: uv sync --frozen
+        # --extra ingest: testy jednostkowe pokrywają chunker i normalize_pdf_text,
+        # a legal_pdf_parser importuje pdfplumber i fitz na poziomie modułu.
+        # Bez tego `pytest -m unit` wywala się na imporcie test_chunker.py.
+        run: uv sync --frozen --extra ingest
 
       - name: Lint (ruff)
         run: uv run ruff check .
