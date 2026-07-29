@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 from tsl_rag.api.auth import verify_api_key
 from tsl_rag.core.documents import DOCUMENT_REGISTRY
 from tsl_rag.core.models import DocumentType, QueryResponse
-from tsl_rag.core.settings import Settings, get_settings
+from tsl_rag.core.settings import get_settings
+from tsl_rag.generation.cache import AnswerCache
 from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
 from tsl_rag.service import answer_query
@@ -60,6 +61,11 @@ def get_retriever(request: Request) -> HybridRetriever:
     return retriever
 
 
+def get_cache(request: Request) -> AnswerCache | None:
+    """Cache z lifespanu. None = wyłączony w konfiguracji."""
+    return getattr(request.app.state, "cache", None)
+
+
 def get_generator(request: Request) -> RAGGenerator:
     """
     Generator utworzony raz na proces, nie per request.
@@ -84,12 +90,20 @@ async def query_rag(
     request: QueryRequest,
     retriever: Annotated[HybridRetriever, Depends(get_retriever)],
     generator: Annotated[RAGGenerator, Depends(get_generator)],
-    settings: Annotated[Settings, Depends(get_settings)],
+    cache: Annotated[AnswerCache | None, Depends(get_cache)],
 ) -> QueryResponse:
     """
     Główny endpoint RAG.
     Przyjmuje pytanie, zwraca odpowiedź z cytowaniami.
+
+    `settings` NIE jest wstrzykiwane przez `Depends(get_settings)`. Funkcja jest
+    owinięta w `lru_cache`, więc FastAPI nie potrafi jej zintrospektować i traktuje
+    adnotację `Settings` (model pydantica) jako POLE CIAŁA żądania. Skutek: ciało
+    zostaje zagnieżdżone w `{"request": …, "settings": …}`, a każde normalne
+    zapytanie dostaje 422. Nie wychodziło to w testach kontenera, bo sprawdzały
+    wyłącznie odpowiedzi 401 — te zapadają przed walidacją ciała.
     """
+    settings = get_settings()
     doc_type = None
     if request.filter_document_type:
         try:
@@ -114,6 +128,7 @@ async def query_rag(
             filter_document_type=doc_type,
             filter_contains_penalty=request.filter_contains_penalty,
             include_chunks=request.debug,
+            cache=cache,
         )
     except HTTPException:
         raise

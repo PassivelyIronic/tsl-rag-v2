@@ -31,3 +31,12 @@ desktop.ini
 *.log
 
 .streamlit/secrets.toml
+
+# Narzędzia asystenta i artefakty lokalne
+.claude/
+.claude*/
+CLAUDE.md
+**/.claude/
+*.orig
+*.rej
+.cache/

@@ -56,6 +56,7 @@ def get_engine() -> dict[str, Any]:
     per pytanie zamykałby pętlę razem z poolem asyncpg, który do niej należy.
     """
     from tsl_rag.core.settings import get_settings
+    from tsl_rag.generation.cache import AnswerCache
     from tsl_rag.generation.generator import RAGGenerator
     from tsl_rag.retrieval.retriever import HybridRetriever
 
@@ -72,6 +73,12 @@ def get_engine() -> dict[str, Any]:
         "retriever": retriever,
         "generator": RAGGenerator(settings),
         "settings": settings,
+        "cache": AnswerCache(
+            max_entries=settings.answer_cache_max_entries,
+            ttl_s=settings.answer_cache_ttl_s,
+        )
+        if settings.answer_cache_enabled
+        else None,
     }
 
 
@@ -91,6 +98,7 @@ def ask(query: str, *, top_k: int, rerank_top_n: int, debug: bool = False) -> di
             top_k=top_k,
             rerank_top_n=rerank_top_n,
             include_chunks=debug,
+            cache=engine["cache"],
         )
     )
     return response.model_dump(mode="json")

@@ -162,6 +162,14 @@ class Settings(BaseSettings):
     # wysłane do modelu, który go nie zna, zostaje w promptcie jako śmieć.
     llm_system_prefix: str = ""
 
+    # --- Cache odpowiedzi ---
+    # Powtórzone pytanie nie ma powodu zjadać dziennego limitu providera ani
+    # czekać kilku sekund na generację. Klucz zawiera konfigurację, więc zmiana
+    # modelu albo stałej RRF unieważnia wpisy automatycznie.
+    answer_cache_enabled: bool = True
+    answer_cache_max_entries: int = 128
+    answer_cache_ttl_s: float = 86_400.0
+
     # --- Dostęp do API ---
     # Puste = autoryzacja WYŁĄCZONA (uruchomienie lokalne, testy). Ustawione =
     # /query wymaga nagłówka X-API-Key. Publiczny URL bez hasła to zaproszenie

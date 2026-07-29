@@ -12,6 +12,7 @@ from tsl_rag.api.routers.query import router as query_router
 from tsl_rag.core.llm_client import resolve_chat_chain
 from tsl_rag.core.logging import configure_logging
 from tsl_rag.core.settings import get_settings
+from tsl_rag.generation.cache import AnswerCache
 from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
 
@@ -47,6 +48,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Raz na proces, bo trzyma stan bezpiecznika łańcucha fallbacku.
     # Tworzenie per request zerowałoby licznik porażek per ogniwo.
     app.state.generator = RAGGenerator(settings)
+    app.state.cache = (
+        AnswerCache(
+            max_entries=settings.answer_cache_max_entries,
+            ttl_s=settings.answer_cache_ttl_s,
+        )
+        if settings.answer_cache_enabled
+        else None
+    )
 
     chain = resolve_chat_chain(settings)
     logger.info(

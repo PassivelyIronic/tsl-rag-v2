@@ -23,7 +23,9 @@ from tsl_rag.core.models import (
     RetrievalRequest,
     RetrievedChunk,
 )
-from tsl_rag.core.observability import stage
+from tsl_rag.core.observability import record_answer, stage
+from tsl_rag.core.settings import get_settings
+from tsl_rag.generation.cache import AnswerCache, cache_key
 from tsl_rag.generation.generator import RAGGenerator
 from tsl_rag.retrieval.retriever import HybridRetriever
 
@@ -38,6 +40,7 @@ async def answer_query(
     filter_document_type: DocumentType | None = None,
     filter_contains_penalty: bool | None = None,
     include_chunks: bool = False,
+    cache: AnswerCache | None = None,
 ) -> QueryResponse:
     """
     Retrieval + generacja dla jednego pytania.
@@ -57,11 +60,30 @@ async def answer_query(
         filter_contains_penalty=filter_contains_penalty,
     )
 
+    # Cache tylko dla zapytań bez filtrów i bez chunków: filtry zmieniają wynik,
+    # a nie wchodzą do klucza, więc ich cache'owanie zwracałoby odpowiedź
+    # policzoną przy innym zawężeniu korpusu.
+    cacheable = (
+        cache is not None
+        and not include_chunks
+        and filter_document_type is None
+        and filter_contains_penalty is None
+    )
+    key = cache_key(query, get_settings()) if cacheable else ""
+
+    if cacheable and (hit := cache.get(key)) is not None:  # type: ignore[union-attr]
+        record_answer("cache_hit")
+        logger.info(f"Cache: trafienie dla '{query[:60]}'")
+        return hit
+
     with stage("query", query_length=len(query)):
         results = await retriever.retrieve(request)
         if not results:
             logger.warning(f"Brak wyników retrievalu dla: '{query[:60]}'")
         response = await generator.generate(query, results)
+
+    if cacheable:
+        cache.put(key, response)  # type: ignore[union-attr]
 
     if include_chunks:
         response.retrieved_chunks = [
