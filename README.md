@@ -122,10 +122,6 @@ konfiguracją, nie są zgadywane z nazwy modelu.
 | Plik | Zawartość |
 |---|---|
 | [`evals/results/`](evals/results/) | Surowe wyniki przebiegów wraz ze snapshotem konfiguracji |
-| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Wdrożenie: Streamlit Cloud + Neon |
-| [`docs/INSTRUKCJA.md`](docs/INSTRUKCJA.md) | Dla użytkownika końcowego, bez żargonu |
-| [`docs/KUBERNETES.md`](docs/KUBERNETES.md) | Przekazanie do projektu k3s |
-| [`docs/PROVIDERS.md`](docs/PROVIDERS.md) | Dlaczego takie API, a nie inne |
 | [`docs/GOLDEN_DATASET.md`](docs/GOLDEN_DATASET.md) | Format zbioru ewaluacyjnego |
 
 ## Jakość

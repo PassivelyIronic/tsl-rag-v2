@@ -125,6 +125,6 @@ def get_chat_client(settings: Settings) -> AsyncOpenAI:
 
     Gemini wystawia warstwę zgodną z OpenAI, więc nie potrzeba osobnego SDK.
     Używany jako MODEL REFERENCYJNY w ewaluacji, nie jako runtime dla
-    użytkownika końcowego — patrz docs/PROVIDERS.md §5.
+    użytkownika końcowego.
     """
     return get_chat_client_for(settings.chat_provider, settings)

@@ -32,14 +32,18 @@ desktop.ini
 
 .streamlit/secrets.toml
 
-# Narzędzia asystenta i dokumenty robocze — nie są częścią produktu.
-# docs/ zostaje w repo: DEPLOY, INSTRUKCJA i KUBERNETES to deliverable'y,
-# nie notatki robocze.
+# Dokumenty robocze i wdrożeniowe — zostają lokalnie, nie w publicznym repo.
+# W docs/ zostaje wyłącznie GOLDEN_DATASET.md, bo opisuje format danych
+# wersjonowanych w tym repo.
 .claude/
 .claude*/
 **/.claude/
 CLAUDE.md
 PLAN.md
+docs/DEPLOY.md
+docs/INSTRUKCJA.md
+docs/KUBERNETES.md
+docs/PROVIDERS.md
 *.orig
 *.rej
 .cache/

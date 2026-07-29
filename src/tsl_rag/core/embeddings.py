@@ -101,7 +101,7 @@ class LocalSentenceTransformerEmbeddings:
     To jest ścieżka odcinająca system od lokalnej Ollamy: brak rate limitu,
     brak klucza API w runtime, brak ryzyka, że model zniknie z darmowej puli.
     Embedding zapytania jest liczony przy KAŻDYM pytaniu, więc jest to
-    najbardziej wrażliwy na awarię punkt pipeline'u (docs/PROVIDERS.md).
+    najbardziej wrażliwy na awarię punkt pipeline'u.
 
     Model ładowany leniwie, przy pierwszym użyciu, i trzymany na stałe —
     wczytanie wag to sekundy, więc nie może dziać się per zapytanie.

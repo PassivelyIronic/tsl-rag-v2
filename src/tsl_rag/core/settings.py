@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # a generacja przez darmowy model na OpenRouter (brak lokalnego GPU).
     # "local" = sentence-transformers w tym samym procesie, na CPU. Jedyny
     # wariant bez zależności sieciowej i bez rate limitu w runtime — embedding
-    # zapytania liczy się przy każdym pytaniu (docs/PROVIDERS.md).
+    # zapytania liczy się przy każdym pytaniu.
     embedding_provider: Literal["ollama", "openai", "local"] = "ollama"
     chat_provider: ChatProvider = "ollama"
 
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     local_embed_batch_size: int = 16
 
     # --- Gemini ---
-    # Dwa zastosowania, oba WYŁĄCZNIE deweloperskie (docs/PROVIDERS.md §5):
+    # Dwa zastosowania, oba WYŁĄCZNIE deweloperskie:
     #   1. LLM-as-a-judge w evals/judge.py
     #   2. chat_provider="gemini" jako MODEL REFERENCYJNY — pomiar sufitu jakości
     #      przy obecnym retrievalu, nie runtime dla użytkownika końcowego
