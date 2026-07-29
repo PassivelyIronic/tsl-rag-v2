@@ -66,9 +66,13 @@ class GoldenQuestion:
 
 
 def _known_document_ids() -> set[str]:
-    # Import lokalny: `evals` nie ma zależeć od pakietu ingestu przy imporcie
-    # modułu, a tylko przy walidacji.
-    from tsl_rag.ingestion.cli import DOCUMENT_REGISTRY
+    # Rejestr bierzemy z `tsl_rag.core.documents`, czyli stamtąd, gdzie jest
+    # zdefiniowany. `tsl_rag.ingestion.cli` tylko go re-eksportuje, ale przy okazji
+    # ciągnie parser PDF (`fitz`) z grupy `ingest`, której obraz produkcyjny
+    # CELOWO nie zawiera. Ponieważ ten moduł woła walidację przy imporcie
+    # (GOLDEN_DATASET na dole pliku), import przez cli wywracał bramkę
+    # w obrazie na ModuleNotFoundError — mimo że sam rejestr to czyste dane.
+    from tsl_rag.core.documents import DOCUMENT_REGISTRY
 
     return {stem.lower() for stem in DOCUMENT_REGISTRY}
 
