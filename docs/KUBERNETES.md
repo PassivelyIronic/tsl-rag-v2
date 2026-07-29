@@ -98,7 +98,7 @@ POSTGRES_DSN: postgresql+asyncpg://user@postgres.tsl-rag.svc:5432/tsl_rag
 EMBEDDING_PROVIDER: local
 CHAT_PROVIDER: openrouter
 OPENROUTER_CHAT_MODEL: nvidia/nemotron-nano-9b-v2:free
-LLM_SYSTEM_PREFIX: /no_think      # 5× szybciej na tym modelu, patrz PLAN.md
+LLM_SYSTEM_PREFIX: /no_think      # 5× szybciej na tym modelu (run_017 vs run_018)
 LOG_JSON: "true"                   # logi na stdout jako JSON
 OTEL_EXPORTER: otlp
 OTEL_ENDPOINT: http://otel-collector.observability.svc:4318/v1/traces

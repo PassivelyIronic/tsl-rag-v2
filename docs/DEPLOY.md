@@ -14,7 +14,7 @@ GitHub (kod)  →  Streamlit Community Cloud (UI + retrieval + generacja, 1 proc
 
 **Dlaczego API działa w tym samym procesie co UI:** Streamlit Cloud uruchamia
 jeden proces, więc nie ma dokąd wysłać żądania HTTP. Steruje tym `UI_MODE=inprocess`.
-Rozdział API/UI z `PLAN.md` zostaje w mocy — obie ścieżki wołają tę samą funkcję
+Rozdział API/UI zostaje w mocy — obie ścieżki wołają tę samą funkcję
 `tsl_rag.service.answer_query`, a `docker/Dockerfile` z osobnym FastAPI dalej jest
 w repo i to on pójdzie do K8s.
 
@@ -61,7 +61,7 @@ uv run python -m tsl_rag.ingestion.cli ingest-all data/raw/
 ```
 
 Oczekiwany wynik: **13 z 14 plików, `failed: 0`, 438 chunków**. Czternasty jest
-pomijany celowo (duplikat, patrz `CLAUDE.md` §8).
+pomijany celowo — jest bajtowo identyczny z taryfikatorem przewoźnika.
 
 Sprawdź w SQL Editorze Neona:
 
@@ -110,7 +110,7 @@ git ls-files | Select-String "^\.env$"    # ma nic nie zwrócić
    OPENROUTER_API_KEY = "sk-or-v1-..."
    OPENROUTER_CHAT_MODEL = "nvidia/nemotron-nano-9b-v2:free"
 
-   # Zmierzone: 5× szybciej i lepiej w każdej metryce treści (PLAN.md Faza 3).
+   # Zmierzone: 5× szybciej i lepiej w każdej metryce treści (run_017 vs run_018).
    LLM_SYSTEM_PREFIX = "/no_think"
 
    # Fallback: gdy darmowy model padnie, pytanie i tak dostanie odpowiedź.
@@ -131,7 +131,7 @@ właściwsze dla przewozów w UE, a AETR dla międzynarodowych poza nią. W teś
 z 2026-07-28 system zacytował AETR i to jest znana słabość kategorii `scope`,
 nie usterka wdrożenia.
 
-**Odpowiedź bez żadnego cytowania traktuj jako porażkę** (`CLAUDE.md` §5.6),
+**Odpowiedź bez żadnego cytowania traktuj jako porażkę**,
 nawet jeśli treść brzmi sensownie.
 
 W panelu bocznym powinny świecić 🟢 przy PostgreSQL i embeddingach.

@@ -59,7 +59,8 @@ uv run python -m evals.run_retrieval_evals   # ~40 s, exit 1 poniżej progu
 
 ## Decyzje projektowe
 
-Każda z poniższych wynika z pomiaru, nie z preferencji. Tabele wyników: [`PLAN.md`](PLAN.md).
+Każda z poniższych wynika z pomiaru, nie z preferencji. Surowe wyniki wszystkich
+przebiegów leżą w [`evals/results/`](evals/results/) i są wersjonowane.
 
 **Hybrydowy retrieval, nie sam wektor.** Numery artykułów i kwoty kar to dopasowania
 dosłowne, w których embeddingi są słabe. BM25 osiąga tu `recall@5` = 0.948 samodzielnie,
@@ -120,7 +121,7 @@ konfiguracją, nie są zgadywane z nazwy modelu.
 
 | Plik | Zawartość |
 |---|---|
-| [`PLAN.md`](PLAN.md) | Fazy, pomiary, odrzucone hipotezy wraz z powodami |
+| [`evals/results/`](evals/results/) | Surowe wyniki przebiegów wraz ze snapshotem konfiguracji |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Wdrożenie: Streamlit Cloud + Neon |
 | [`docs/INSTRUKCJA.md`](docs/INSTRUKCJA.md) | Dla użytkownika końcowego, bez żargonu |
 | [`docs/KUBERNETES.md`](docs/KUBERNETES.md) | Przekazanie do projektu k3s |

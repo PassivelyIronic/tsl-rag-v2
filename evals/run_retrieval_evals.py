@@ -26,7 +26,7 @@ wystarczy serwis Postgresa i ingest w jobie.
 
 Progi bramkujące trzymane są w `evals/thresholds.yaml`, nie we fladze komendy,
 żeby CI i człowiek patrzyli na te same liczby, a ich zmiana była widoczna
-w diffie (zasada #1 z CLAUDE.md).
+w diffie.
 
 Uruchomienie:
   uv run python -m evals.run_retrieval_evals
@@ -336,7 +336,7 @@ async def run(output_path: Path | None, check_thresholds: bool) -> int:
 
     if not passed:
         print(
-            "\n  BRAMKA NIESPEŁNIONA. Zgodnie z zasadą #1 w CLAUDE.md progu NIE obniża się,\n"
+            "\n  BRAMKA NIESPEŁNIONA. Progu NIE obniża się po to,\n"
             "  żeby przebieg przeszedł — spadek jest wynikiem do zaraportowania."
         )
         return 1

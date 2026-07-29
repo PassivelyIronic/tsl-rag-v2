@@ -1,6 +1,6 @@
 # Progi bramkujące jakość retrievalu.
 #
-# ZASADA #1 z CLAUDE.md: progu NIE OBNIŻA SIĘ po to, żeby przebieg przeszedł.
+# ZASADA: progu NIE OBNIŻA SIĘ po to, żeby przebieg przeszedł.
 # Spadek poniżej progu jest wynikiem do zaraportowania, nie liczbą do poprawienia.
 # Zmiana wartości w tym pliku wymaga OSOBNEGO commita z uzasadnieniem i nigdy
 # nie jest częścią commita, który tę metrykę psuje.

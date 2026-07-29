@@ -32,11 +32,14 @@ desktop.ini
 
 .streamlit/secrets.toml
 
-# Narzędzia asystenta i artefakty lokalne
+# Narzędzia asystenta i dokumenty robocze — nie są częścią produktu.
+# docs/ zostaje w repo: DEPLOY, INSTRUKCJA i KUBERNETES to deliverable'y,
+# nie notatki robocze.
 .claude/
 .claude*/
-CLAUDE.md
 **/.claude/
+CLAUDE.md
+PLAN.md
 *.orig
 *.rej
 .cache/
