@@ -124,7 +124,7 @@ extend-immutable-calls = ["typer.Option", "typer.Argument", "fastapi.Depends", "
 # Domyślne koło torcha z PyPI na Linuksie to build CUDA. W obrazie produkcyjnym
 # dawało to 2725 MB pakietów `nvidia/*` plus 691 MB `triton` — sterowniki do karty,
 # której w kontenerze nie ma. Ten system z założenia liczy embeddingi na CPU
-# (CLAUDE.md §6.3: sentence-transformers, embeddingi lokalne na CPU), a `torch.cuda
+#, a `torch.cuda
 # .is_available()` w zbudowanym obrazie zwracało False.
 #
 # Zmierzone: obraz 3.45 GB → patrz PLAN.md Faza 5.

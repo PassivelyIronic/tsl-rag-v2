@@ -249,7 +249,7 @@ class RAGGenerator:
             return answer, _NO_ANSWER_MARKER not in answer, target.model, switches
 
         # Wszystkie ogniwa padły. Komunikat po polsku, bo trafia wprost
-        # do nietechnicznego użytkownika (CLAUDE.md §1).
+        # do nietechnicznego użytkownika.
         logger.error(f"Wszystkie ogniwa łańcucha zawiodły. Ostatni powód: {last_error}")
         model_used = chain[-1].model if chain else "brak"
         return _ALL_FAILED_MESSAGE, False, model_used, switches
@@ -340,7 +340,7 @@ def _extract_citations(
     `candidates[0].chunk.metadata.article`, więc odpowiedź cytująca
     "[ec_561_2006 | Art. 6]" była raportowana jako Artykuł 11, jeśli tylko
     chunk z artykułem 11 znalazł się wyżej w retrievalu. Przy zasadzie,
-    że cytowanie niewłaściwego przepisu jest porażką (CLAUDE.md §5.6),
+    że cytowanie niewłaściwego przepisu jest porażką,
     zgłaszanie innego artykułu niż wskazany w tekście jest poważniejsze
     niż brak cytowania — bo wygląda na potwierdzone metadanymi.
     """

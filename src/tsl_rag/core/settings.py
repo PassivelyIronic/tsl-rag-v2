@@ -18,7 +18,7 @@ class Settings(BaseSettings):
         # extra="forbid" jest domyślne, ale zapisane jawnie, bo to źródło
         # częstego błędu: zmienna w .env bez odpowiednika tutaj wywala start
         # komunikatem "Extra inputs are not permitted". Dodając pole tutaj,
-        # dodaj je też do env.example (CLAUDE.md §9).
+        # dodaj je też do env.example.
         extra="forbid",
     )
 
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # Domyślny slug = jedyny model zweryfikowany empirycznie w tym projekcie
     # (patrz evals/results/model_comparison.json). Poprzedni domyślny
     # llama-3.3-70b-instruct:free zwracał 429 w 3/3 próbach z backoffem.
-    # Slug zmieniaj tylko po sprawdzeniu w zakładce API modelu (CLAUDE.md §5.3).
+    # Slug zmieniaj tylko po sprawdzeniu w zakładce API modelu.
     openrouter_chat_model: str = "nvidia/nemotron-nano-9b-v2:free"
 
     # --- Lokalne embeddingi (EMBEDDING_PROVIDER=local) ---
@@ -158,7 +158,7 @@ class Settings(BaseSettings):
     # łańcuch rozumowania nie ma jak wyczerpać llm_max_tokens.
     #
     # Wartość jest JAWNĄ KONFIGURACJĄ, nie jest zgadywana z nazwy modelu —
-    # tak samo jak prefiksy E5 przy embeddingach (CLAUDE.md §3). `/no_think`
+    # tak samo jak prefiksy E5 przy embeddingach. `/no_think`
     # wysłane do modelu, który go nie zna, zostaje w promptcie jako śmieć.
     llm_system_prefix: str = ""
 
@@ -200,7 +200,7 @@ class Settings(BaseSettings):
     retrieval_rerank_top_n: int = 5
     # Wagi RRF. 0.5/0.5 = obie listy rankingowe równoważne, czyli dokładnie
     # to, co robił nieważony RRF przed podłączeniem tych pól. Zmiana proporcji
-    # zmienia ranking, więc wymaga przebiegu evalu przed/po (CLAUDE.md §9).
+    # zmienia ranking, więc wymaga przebiegu evalu przed/po.
     bm25_weight: float = 0.5
     dense_weight: float = 0.5
 

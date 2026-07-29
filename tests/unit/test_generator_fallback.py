@@ -129,7 +129,7 @@ async def test_refusal_is_not_treated_as_failure(fake_client):
     """
     Odmowa to poprawna odpowiedź modelu, nie awaria. Przełączanie na kolejne
     ogniwo w jej wyniku szukałoby modelu skłonnego halucynować — dokładnie
-    odwrotnie do zasady, że halucynacja jest gorsza niż odmowa (CLAUDE.md §1).
+    odwrotnie do zasady, że halucynacja jest gorsza niż odmowa.
     """
     client = fake_client(
         {"a": "Nie mogę odpowiedzieć na to pytanie na podstawie dostępnych dokumentów.", "b": "X."}

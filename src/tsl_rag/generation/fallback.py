@@ -35,7 +35,7 @@ def classify_failure(exc: BaseException) -> FailureKind:
     sensu ponawiać (zły slug modelu albo model wycofany z puli zwrócą to samo
     przy każdej próbie), przy TRANSIENT ma — ale na KOLEJNYM ogniwie, bo
     zmierzone 429 z OpenRoutera to przeciążenie upstreamu, którego backoff
-    na tym samym providerze nie omija (CLAUDE.md §8).
+    na tym samym providerze nie omija.
     """
     if isinstance(exc, APIStatusError):
         status = exc.status_code

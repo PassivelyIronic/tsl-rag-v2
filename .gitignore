@@ -8,7 +8,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Sekrety — nigdy do repo (CLAUDE.md zasada #4)
+# Sekrety — nigdy do repo
 .env
 
 # Artefakty pośrednie ingestu — odtwarzalne z data/raw/
@@ -33,8 +33,6 @@ desktop.ini
 .streamlit/secrets.toml
 
 # Dokumenty robocze i wdrożeniowe — zostają lokalnie, nie w publicznym repo.
-# W docs/ zostaje wyłącznie GOLDEN_DATASET.md, bo opisuje format danych
-# wersjonowanych w tym repo.
 .claude/
 .claude*/
 **/.claude/
@@ -44,6 +42,10 @@ docs/DEPLOY.md
 docs/INSTRUKCJA.md
 docs/KUBERNETES.md
 docs/PROVIDERS.md
+docs/GOLDEN_DATASET.md
 *.orig
 *.rej
 .cache/
+
+# Konfiguracja edytora
+*.code-workspace

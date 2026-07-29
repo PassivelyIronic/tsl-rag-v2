@@ -36,7 +36,7 @@ def _json_sink(message: Any) -> None:
     Jedna linia JSON na rekord, na stdout.
 
     Stdout, nie plik: aplikacja ma być dobrze zachowującym się tenantem —
-    zbieranie logów należy do platformy, nie do procesu (CLAUDE.md §7).
+    zbieranie logów należy do platformy, nie do procesu.
     """
     record = message.record
     payload = {

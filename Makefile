@@ -1,5 +1,5 @@
 # Cele pomocnicze. Na Windows `make` zwykle nie jest dostępny —
-# wtedy odpalaj prawą stronę reguły wprost w PowerShellu (CLAUDE.md §4).
+# wtedy odpalaj prawą stronę reguły wprost w PowerShellu.
 
 .PHONY: help db-up db-down api ui ingest eval eval-judge lint format typecheck test check
 

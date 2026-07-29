@@ -2,7 +2,7 @@
 Klient generacji odpowiedzi.
 
 Embeddingi mieszkają w `core/embeddings.py` i mają własny przełącznik.
-To rozdzielenie jest twardą zasadą repo (CLAUDE.md §3): `embedding_provider`
+To rozdzielenie jest twardą zasadą repo: `embedding_provider`
 i `chat_provider` są niezależne, bo embedding musi być najstabilniejszym
 elementem układu, a generacja może iść przez darmowy model w chmurze.
 

@@ -402,7 +402,7 @@ def _config_snapshot() -> dict:
     Bez tego wynik w evals/results/ jest nieinterpretowalny po tygodniu:
     nie wiadomo, jaki model, jakie wagi RRF i jakie top_k stały za metryką.
     Zasada "zero niezweryfikowanych liczb" wymaga, żeby liczbie towarzyszyły
-    warunki pomiaru (CLAUDE.md §5.2).
+    warunki pomiaru.
     """
     s = get_settings()
     return {

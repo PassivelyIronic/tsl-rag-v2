@@ -6,7 +6,7 @@ zgodnego z OpenAI, a lokalny `sentence-transformers` żadnym klientem nie jest �
 to model w tym samym procesie. Nazwa `get_llm_client()` dla embeddingów była
 przy okazji myląca: sugerowała model językowy, a chodziło o wektory.
 
-Podział na embeddingi i chat pozostaje ostry (CLAUDE.md §3):
+Podział na embeddingi i chat pozostaje ostry:
 - ten moduł        → WYŁĄCZNIE embeddingi (`embedding_provider`)
 - `llm_client.py`  → WYŁĄCZNIE generacja (`chat_provider`)
 

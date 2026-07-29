@@ -45,7 +45,7 @@ def normalize_pdf_text(text: str) -> str:
     W korpusie przed naprawą: 1258 wystąpień w 307 z 444 chunków.
 
     Zmiana wpływa na treść chunków, więc wymaga ponownego ingestu i pomiaru
-    retrievalu przed i po (CLAUDE.md §9).
+    retrievalu przed i po.
     """
     without_hyphens = _SOFT_HYPHEN_BREAK.sub("", text)
     lines = [_INLINE_SPACES.sub(" ", line).strip() for line in without_hyphens.splitlines()]

@@ -117,13 +117,6 @@ rozrzut do 0.133 między przebiegami identycznego kodu.
 jest najczęstszym źródłem błędów w tym repo. Prefiksy E5 (`query:` / `passage:`) są jawną
 konfiguracją, nie są zgadywane z nazwy modelu.
 
-## Dokumentacja
-
-| Plik | Zawartość |
-|---|---|
-| [`evals/results/`](evals/results/) | Surowe wyniki przebiegów wraz ze snapshotem konfiguracji |
-| [`docs/GOLDEN_DATASET.md`](docs/GOLDEN_DATASET.md) | Format zbioru ewaluacyjnego |
-
 ## Jakość
 
 ```bash

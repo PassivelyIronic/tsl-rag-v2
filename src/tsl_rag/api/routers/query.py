@@ -20,7 +20,7 @@ router = APIRouter(prefix="/query", tags=["query"])
 
 # Komunikaty dla użytkownika końcowego — po polsku i mówiące, co zrobić.
 # Użytkownik docelowy jest nietechniczny, stacktrace nic mu nie mówi
-# (CLAUDE.md §1).
+# .
 _MSG_NOT_READY = (
     "System nie ma teraz połączenia z bazą dokumentów prawnych. "
     "Odczekaj chwilę i zadaj pytanie ponownie. Jeśli to się powtarza, "
