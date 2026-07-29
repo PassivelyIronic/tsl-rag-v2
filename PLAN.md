@@ -376,7 +376,7 @@ i kolejność decyduje o tym, co przetrwa. Dodatkowo przy wadze 0 dense stałby
 się czystym kosztem — embeddingi liczylibyśmy przy każdym zapytaniu na nic.
 - [ ] Wrócić do `v2-m3`, jeśli zmieni się budżet latencji (cache odpowiedzi
       z Fazy 5, mocniejszy sprzęt) — to jest jakość dostępna od ręki za czas
-- [ ] Rozważyć podział dużych chunków tabelarycznych. Uwaga: taryfikatory mają
+- [ ] **ODŁOŻONE świadomie (2026-07-29)** — podział dużych chunków tabelarycznych. Uwaga: taryfikatory mają
       średnio 2458 znaków, więc przy `max_context_chars=12000` **pięć chunków
       wypełnia cały budżet kontekstu**. Podział musi iść po grupach wierszy
       z powtórzonym nagłówkiem — rozerwanie opisu naruszenia od kwoty to
@@ -640,6 +640,12 @@ Uzasadnienie fallbacku jest empiryczne: w jednej sesji testowej wystąpiły **tr
 awarii** OpenRoutera (404 wycofany model, 400 zły slug, 429 przeciążenie upstream w 3/3 próbach
 z backoffem). System używany bez nadzoru autora nie może zależeć od jednego darmowego endpointu.
 
+- [ ] **`cross_document` — ODŁOŻONE świadomie (2026-07-29).** Ostatnia nietknięta
+      kategoria: recall@5 0.857, `fakty@5` 0.833, MRR 1.000. Oczekuje dwóch aktów naraz,
+      więc jedno pudło kosztuje pół punktu. Do zrobienia, gdy wróci priorytet jakości.
+- [ ] **Druga platforma w łańcuchu fallbacku.** Dziś oba ogniwa wskazują OpenRoutera,
+      więc łańcuch chroni przed wyczerpaniem limitu i wycofaniem modelu, ale nie przed
+      awarią samej platformy. Kandydat: Cloudflare Workers AI.
 - [ ] Cloudflare Workers AI jako `chat_provider="cloudflare"` (10k neuronów/dobę, reset 00:00 UTC,
       brak rotacji modeli — wagi na GPU Cloudflare)
 - [ ] Benchmark przez `compare_models.py`: kandydaci Cloudflare vs `nemotron-nano-9b-v2:free`
