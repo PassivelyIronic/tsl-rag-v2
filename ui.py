@@ -209,6 +209,11 @@ with st.sidebar:
         )
 
     st.markdown("---")
+    st.markdown(
+        f'<div style="font-family:IBM Plex Mono,monospace;font-size:0.7rem;color:#6e7681">'
+        f"tryb: {'in-process' if INPROCESS else 'osobne API'}</div>",
+        unsafe_allow_html=True,
+    )
     # Stan systemu — /ready, nie /query/health (ten drugi już nie istnieje).
     # Nazwy providerów bierzemy z odpowiedzi, a nie zaszywamy w UI, bo
     # EMBEDDING_PROVIDER i CHAT_PROVIDER są niezależnie przełączalne.
@@ -235,8 +240,21 @@ with st.sidebar:
             f"model: {ready.get('chat_model', '?')}</div>",
             unsafe_allow_html=True,
         )
-    except Exception:
-        st.markdown("🔴 API niedostępne")
+    except Exception as exc:
+        # Komunikat MUSI rozróżniać tryby. "API niedostępne" w trybie in-process
+        # jest myłące, bo tam żadnego API nie ma z założenia — a to była pierwsza
+        # rzecz, którą zobaczył właściciel repo po wdrożeniu na Streamlit Cloud
+        # i nie dawała żadnej wskazówki, czego szukać.
+        if INPROCESS:
+            st.markdown("🔴 Silnik nie wstał")
+            st.caption(f"{type(exc).__name__}: {str(exc)[:300]}")
+        else:
+            st.markdown("🔴 API niedostępne")
+            st.caption(
+                f"Tryb: API pod {API_BASE_URL}. Jeśli to wdrożenie na Streamlit Cloud, "
+                f'brakuje sekretu UI_MODE = "inprocess" — bez niego UI szuka osobnego '
+                f"serwisu, którego tam nie ma."
+            )
 
 # ── Header ─────────────────────────────────────────────────────────────────
 st.markdown(
