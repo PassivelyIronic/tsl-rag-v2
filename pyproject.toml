@@ -21,7 +21,12 @@ dependencies = [
     # Zadeklarowany JAWNIE, mimo że wchodzi tranzytywnie przez sentence-transformers:
     # [tool.uv.sources] na dole pliku działa tylko na zależności bezpośrednie,
     # więc bez tego wpisu przypięcie wariantu CPU jest po cichu ignorowane.
-    "torch>=2.0.0",
+    "torch>=2.0.0,<2.13",
+    # torchvision MUSI iść z tego samego indeksu co torch — rozszerzenia C++
+    # są kompilowane pod konkretny build. Mieszanka (torch z indeksu CPU,
+    # torchvision z PyPI) daje "operator torchvision::nms does not exist",
+    # co objawia się dopiero przy imporcie transformers.
+    "torchvision>=0.15.0",
     "rank-bm25>=0.2.2",
     "loguru>=0.7.2",
     "httpx>=0.27.0",
@@ -131,3 +136,4 @@ explicit = true
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
