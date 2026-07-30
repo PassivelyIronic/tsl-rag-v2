@@ -1,0 +1,37 @@
+# Artefakt OCI z seed dumpem tabeli `document_chunks`.
+#
+# Po co to istnieje: ingest wymaga parserów PDF (`unstructured[pdf]` → torchvision,
+# opencv, spacy) i modelu embeddingów, żeby za każdym razem policzyć te same 438
+# wierszy. Świeży namespace robi zamiast tego `pg_restore` w sekundy, bez parserów
+# i bez modelu (DECISIONS D-015).
+#
+# Dlaczego busybox, a nie `FROM scratch`: obraz jest konsumowany jako initContainer,
+# który przekłada dump do wolumenu współdzielonego z kontenerem mającym `pg_restore`.
+# `scratch` nie ma czym tego zrobić, a wciąganie ORAS-a do klastra po to, żeby pobrać
+# jeden plik, jest droższe niż 4 MB busyboksa.
+#
+# Budowanie (kontekst = katalog z wygenerowanym dumpem, nie repo):
+#   docker build -f docker/Dockerfile.seed -t ghcr.io/passivelyironic/tsl-rag-corpus:<tag> <dir>
+#
+# Tag pochodzi z `scripts/corpus_tag.py` i jest liczony z ZAWARTOŚCI wejść, nigdy
+# z SHA obrazu API (D-016).
+
+FROM busybox:1.37-musl
+
+# Metadane niesione przez artefakt. `embedding-model` jest tu najważniejszy:
+# CI tenanta porównuje go z `database.embeddingModel` z kontraktu platformy, żeby
+# niezgodność wyszła przy budowie środowiska, a nie 60 sekund później w podzie API,
+# na startupProbe (D-015).
+ARG CORPUS_TAG
+ARG EMBEDDING_MODEL
+ARG CHUNK_COUNT
+
+LABEL org.opencontainers.image.source="https://github.com/PassivelyIronic/tsl-rag-v2" \
+      org.opencontainers.image.description="Seed dump tabeli document_chunks (pg_dump -Fc) dla tsl-rag" \
+      io.tsl-rag.corpus-tag="${CORPUS_TAG}" \
+      io.tsl-rag.embedding-model="${EMBEDDING_MODEL}" \
+      io.tsl-rag.chunk-count="${CHUNK_COUNT}" \
+      io.tsl-rag.table="document_chunks" \
+      io.tsl-rag.dump-format="pg_dump -Fc"
+
+COPY document_chunks.dump /seed/document_chunks.dump

@@ -1,0 +1,240 @@
+name: seed-dump
+
+# Produkcja seed dumpu korpusu i publikacja jako artefakt OCI.
+#
+# Dlaczego to NIE jest część ścieżki wdrożeniowej: ingest wymaga parserów PDF
+# (`unstructured[pdf]` → torchvision, opencv, spacy) i modelu embeddingów, żeby
+# za każdym razem policzyć te same wiersze. Świeży namespace robi zamiast tego
+# `pg_restore` z gotowego artefaktu — w sekundy, bez parserów i bez modelu.
+#
+# Kiedy się uruchamia:
+#
+# 1. Filtr `paths` odpala workflow tylko przy zmianie czegoś, co MOŻE zmienić
+#    zawartość dumpu. To jest optymalizacja, nie gwarancja.
+# 2. Gwarancją jest sprawdzenie, czy artefakt o wyliczonym tagu już istnieje.
+#    Tag jest funkcją zawartości (korpus + parser + chunker + konfiguracja
+#    embeddingów), więc identyczny tag oznacza identyczną zawartość i nie ma
+#    czego produkować. Zmiana, która nie rusza żadnego z tych wejść, kończy
+#    workflow po kilkunastu sekundach.
+#
+# Ten podział jest celowy: filtr po ścieżkach da się przeoczyć przy refaktorze
+# (przeniesienie chunkera do innego katalogu), sprawdzenie tagu nie da się —
+# bo liczy hash z plików wskazanych po nazwie w scripts/corpus_tag.py.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/raw/**"
+      - "src/tsl_rag/ingestion/parsers/**"
+      - "src/tsl_rag/ingestion/chunkers/**"
+      - "src/tsl_rag/core/settings.py"
+      - "src/tsl_rag/core/documents.py"
+      - "scripts/corpus_tag.py"
+      - "docker/Dockerfile.seed"
+      - "docker/init.sql"
+      - ".github/workflows/seed-dump.yml"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Zbuduj nawet jeśli artefakt o tym tagu już istnieje"
+        type: boolean
+        default: false
+
+concurrency:
+  group: seed-dump
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  SEED_REPO: ghcr.io/passivelyironic/tsl-rag-corpus
+  POSTGRES_DSN: postgresql+asyncpg://postgres:postgres@localhost:5432/tsl_rag
+  EMBEDDING_PROVIDER: local
+
+jobs:
+  seed-dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tsl_rag
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tsl_rag"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalacja uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Instalacja Pythona z .python-version
+        run: uv python install
+
+      - name: Synchronizacja zależności z parserami PDF
+        run: uv sync --frozen --extra ingest
+
+      # Jedno źródło prawdy dla tagu i dla metadanych artefaktu: ten sam skrypt,
+      # to samo wyliczenie. Wpisywanie modelu ręcznie w dwóch miejscach byłoby
+      # zaproszeniem do rozjazdu, którego nikt nie zauważy do pierwszego
+      # zapytania dającego losowe wyniki.
+      - name: Wyliczenie tagu z zawartości
+        id: tag
+        run: |
+          set -euo pipefail
+          uv run python scripts/corpus_tag.py --json > corpus_tag.json
+          {
+            echo "tag=$(jq -r .tag corpus_tag.json)"
+            echo "model=$(jq -r .embedding.model corpus_tag.json)"
+          } >> "$GITHUB_OUTPUT"
+          jq -r '"tag: \(.tag)\nmodel: \(.embedding.model)"' corpus_tag.json
+
+      - name: Logowanie do GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Ten krok jest właściwym zabezpieczeniem przed marnowaniem przebiegów,
+      # a przy okazji dowodem, że tag naprawdę jest funkcją zawartości: dwa
+      # przebiegi bez zmiany wejść muszą trafić w istniejący artefakt.
+      - name: Czy artefakt o tym tagu już istnieje
+        id: exists
+        env:
+          IMAGE_REF: ${{ env.SEED_REPO }}:${{ steps.tag.outputs.tag }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -uo pipefail
+          if [ "$FORCE" = "true" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Wymuszona przebudowa."
+            exit 0
+          fi
+          if docker manifest inspect "$IMAGE_REF" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Artefakt $IMAGE_REF już istnieje — zawartość się nie zmieniła."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Brak artefaktu $IMAGE_REF — trzeba go wyprodukować."
+          fi
+
+      # Wagi modelu (~1.1 GB). Klucz zawiera nazwę modelu, więc jego zmiana
+      # unieważnia cache zamiast po cichu użyć starych wag.
+      - name: Cache wag modelu
+        if: steps.exists.outputs.skip == 'false'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ steps.tag.outputs.model }}
+
+      - name: Schemat bazy
+        if: steps.exists.outputs.skip == 'false'
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d tsl_rag -v ON_ERROR_STOP=1 -f docker/init.sql
+
+      - name: Ingest korpusu
+        if: steps.exists.outputs.skip == 'false'
+        run: uv run python -m tsl_rag.ingestion.cli ingest-all data/raw/
+
+      # Pusty albo częściowy ingest wyprodukowałby artefakt, który wygląda
+      # poprawnie i przechodzi restore, a bramkę wywala dopiero w klastrze —
+      # z komunikatem o niskim recall, czyli sugerującym regresję retrievalu
+      # zamiast zepsutego seeda.
+      - name: Weryfikacja zawartości przed dumpem
+        if: steps.exists.outputs.skip == 'false'
+        id: verify
+        env:
+          PGPASSWORD: postgres
+          EXPECTED_MODEL: ${{ steps.tag.outputs.model }}
+        run: |
+          set -euo pipefail
+          q() { psql -h localhost -U postgres -d tsl_rag -tAc "$1"; }
+
+          chunks=$(q "select count(*) from document_chunks;")
+          docs=$(q "select count(distinct document_id) from document_chunks;")
+          without_vector=$(q "select count(*) from document_chunks where embedding is null;")
+          models=$(q "select distinct metadata->>'embedding_model' from document_chunks;")
+
+          echo "chunków: $chunks | dokumentów: $docs | bez wektora: $without_vector"
+          echo "model w metadanych: $models"
+
+          if [ "$chunks" -eq 0 ]; then
+            echo "::error::Ingest nie wyprodukował ani jednego chunka."
+            exit 1
+          fi
+          if [ "$without_vector" -ne 0 ]; then
+            echo "::error::$without_vector chunków bez embeddingu — dump byłby bezużyteczny dla retrievalu gęstego."
+            exit 1
+          fi
+          if [ "$models" != "$EXPECTED_MODEL" ]; then
+            echo "::error::Model w metadanych ($models) != model, z którego policzono tag ($EXPECTED_MODEL)."
+            exit 1
+          fi
+          echo "chunks=$chunks" >> "$GITHUB_OUTPUT"
+
+      - name: pg_dump
+        if: steps.exists.outputs.skip == 'false'
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          mkdir -p seed
+          pg_dump -h localhost -U postgres -d tsl_rag -Fc -t document_chunks -f seed/document_chunks.dump
+          ls -lh seed/
+
+      - name: Build i push artefaktu
+        if: steps.exists.outputs.skip == 'false'
+        env:
+          IMAGE_REF: ${{ env.SEED_REPO }}:${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          docker build \
+            -f docker/Dockerfile.seed \
+            --build-arg CORPUS_TAG="${{ steps.tag.outputs.tag }}" \
+            --build-arg EMBEDDING_MODEL="${{ steps.tag.outputs.model }}" \
+            --build-arg CHUNK_COUNT="${{ steps.verify.outputs.chunks }}" \
+            -t "$IMAGE_REF" \
+            seed
+          docker push "$IMAGE_REF"
+
+      # Tag trzeba wpisać do kontraktu w repo platformy (`database.seed`).
+      # Świadomie NIE otwieramy tam PR-a automatycznie: zmiana seeda oznacza,
+      # że korpus albo sposób jego przetwarzania się zmienił, więc bramka
+      # retrievalowa powinna zostać przejrzana przez człowieka, a nie
+      # przepchnięta automatem razem z nowym dumpem.
+      - name: Podsumowanie
+        run: |
+          {
+            if [ "${{ steps.exists.outputs.skip }}" = "true" ]; then
+              echo "### Seed dump bez zmian"
+              echo ""
+              echo "Zawartość korpusu i konfiguracja nie zmieniły się — artefakt \`${{ steps.tag.outputs.tag }}\` już istnieje."
+            else
+              echo "### Nowy seed dump"
+              echo ""
+              echo "| | |"
+              echo "|---|---|"
+              echo "| tag | \`${{ steps.tag.outputs.tag }}\` |"
+              echo "| model | \`${{ steps.tag.outputs.model }}\` |"
+              echo "| chunków | ${{ steps.verify.outputs.chunks }} |"
+              echo ""
+              echo "Do użycia trzeba wpisać ten tag w \`database.seed\` w kontrakcie w repo platformy."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
