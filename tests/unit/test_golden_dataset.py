@@ -45,7 +45,11 @@ def test_out_of_scope_questions_have_no_expected_docs():
 
 
 def test_expected_docs_exist_in_registry():
-    from tsl_rag.ingestion.cli import DOCUMENT_REGISTRY
+    # Ten sam import co w evals/golden_dataset/questions.py — przez core.documents,
+    # nie przez ingestion.cli. Tutaj działałyby oba (testy mają pełne zależności),
+    # ale rozjazd między testem a walidatorem oznaczałby, że test przestaje pilnować
+    # tego, co faktycznie robi kod w obrazie.
+    from tsl_rag.core.documents import DOCUMENT_REGISTRY
 
     known = {stem.lower() for stem in DOCUMENT_REGISTRY}
     for q in GOLDEN_DATASET:

@@ -47,6 +47,17 @@ WORKDIR /app
 COPY --from=builder --chown=tsl:tsl /app/.venv /app/.venv
 COPY --from=builder --chown=tsl:tsl /app/src /app/src
 
+# Bramka promocji jedzie w TYM SAMYM obrazie co API — nie w osobnym obrazie
+# ewaluacyjnym. Drugi obraz to drugi tag do zsynchronizowania, czyli druga okazja
+# do rozjazdu między bramką a kodem, który ona ocenia. Kilkadziesiąt kB (wyniki
+# przebiegów wycina .dockerignore) nie jest ceną wartą tego ryzyka.
+#
+# Kopiowane z kontekstu budowania, nie z warstwy builder: `uv sync` instaluje
+# wyłącznie pakiet tsl_rag ze src/, a evals/ nie jest pakietem instalowanym.
+# Dlatego `python -m evals.run_retrieval_evals` znajduje go WYŁĄCZNIE przez cwd
+# i Job bramki musi mieć workingDir /app.
+COPY --chown=tsl:tsl evals/ /app/evals/
+
 USER tsl
 
 EXPOSE 8000

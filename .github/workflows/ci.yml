@@ -1,14 +1,21 @@
 name: CI
 
-# Bramka jakości kodu: lint, formatowanie, typy, testy jednostkowe.
+# Ten plik jest WYWOŁANIEM, nie pipeline'em. Logika — lint, build multi-arch,
+# push do GHCR i smoke test bramki — mieszka w repo platformy
+# (PassivelyIronic/ai-platform), więc jej zmiana propaguje się na wszystkie
+# serwisy naraz, zamiast wymagać identycznej poprawki w każdym repo tenanta.
 #
-# Czego tu świadomie NIE MA:
-# - testów integracyjnych i e2e — wymagają Postgresa z zaindeksowanym
-#   korpusem i providera embeddingów; katalogi tests/integration i tests/e2e
-#   są dziś puste (PLAN.md Faza 1)
-# - bramki na metrykach evalu — wymaga klucza providera i zaindeksowanej bazy;
-#   wchodzi razem z eval-gated promotion (PLAN.md Faza 6)
-# Dopóki tych elementów nie ma, ten workflow nie udaje, że je sprawdza.
+# Co doszło względem poprzedniej wersji tego pliku: obraz jest budowany
+# i wypychany, a bramka retrievalowa uruchamiana NA TYM ZBUDOWANYM OBRAZIE,
+# przeciwko jednorazowemu Postgresowi zasiedlonemu z artefaktu seed. Poprzednia
+# wersja sprawdzała wyłącznie kod w klonie repo — i właśnie dlatego przez pewien
+# czas dokumentacja podawała komendę bramki, która w obrazie nie wykonywała się
+# w ogóle: `evals/` tam nie było, a `uv` nie istnieje w warstwie runtime.
+#
+# Czego tu nadal świadomie NIE MA: testów integracyjnych i e2e (katalogi są puste,
+# PLAN.md Faza 1) oraz bramki na metrykach generacji — ta ostatnia nie powstanie,
+# bo metryki zależne od LLM-a rozrzucają się między przebiegami identycznego kodu
+# nawet o 0.133. Bramkuje się na tym, co deterministyczne.
 
 on:
   push:
@@ -20,43 +27,36 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  ci:
+    uses: PassivelyIronic/ai-platform/.github/workflows/service-ci.yml@main
+    permissions:
+      contents: read
+      packages: write
+    with:
+      image-name: ghcr.io/passivelyironic/tsl-rag-api
 
-    env:
-      # Settings wymaga POSTGRES_DSN, a CI nie stawia bazy — wartość jest
-      # atrapą wystarczającą do walidacji konfiguracji. Żaden test w tym
-      # jobie nie łączy się z bazą.
-      POSTGRES_DSN: postgresql+asyncpg://postgres:postgres@localhost:5433/tsl_rag
+      # Bez `uv` — nie ma go w warstwie runtime obrazu; `evals/` jest kopiowany,
+      # nie instalowany w venv, więc pakiet znajduje się wyłącznie przez cwd.
+      gate-command: python -m evals.run_retrieval_evals
+      gate-env: EMBEDDING_PROVIDER=local
 
-    steps:
-      - uses: actions/checkout@v4
+      # Tag pochodzi z zawartości korpusu, parsera, chunkera i konfiguracji
+      # embeddingów — nie z SHA tego repo. Liczy go scripts/corpus_tag.py.
+      seed-image: ghcr.io/passivelyironic/tsl-rag-corpus:corpus-f646c99b8ebf
+      embedding-model: intfloat/multilingual-e5-base
 
-      - name: Instalacja uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
+      # --extra ingest: testy jednostkowe pokrywają chunker i normalize_pdf_text,
+      # a legal_pdf_parser importuje pdfplumber i fitz na poziomie modułu.
+      sync-command: uv sync --frozen --extra ingest
+      typecheck-command: uv run mypy src/tsl_rag
 
-      - name: Instalacja Pythona z .python-version
-        run: uv python install
-
-      - name: Synchronizacja zależności
-        # --extra ingest: testy jednostkowe pokrywają chunker i normalize_pdf_text,
-        # a legal_pdf_parser importuje pdfplumber i fitz na poziomie modułu.
-        # Bez tego `pytest -m unit` wywala się na imporcie test_chunker.py.
-        run: uv sync --frozen --extra ingest
-
-      - name: Lint (ruff)
-        run: uv run ruff check .
-
-      - name: Formatowanie (ruff format)
-        run: uv run ruff format --check .
-
-      - name: Typy (mypy)
-        run: uv run mypy src/tsl_rag
-
-      - name: Testy jednostkowe
-        run: uv run pytest -m unit
+      # Settings wymaga POSTGRES_DSN, a job lintu i testów nie stawia bazy.
+      # Atrapa wystarcza do walidacji konfiguracji; żaden test w tym jobie
+      # nie łączy się z bazą.
+      quality-env: POSTGRES_DSN=postgresql+asyncpg://postgres:postgres@localhost:5433/tsl_rag
+    secrets: inherit
