@@ -1,5 +1,7 @@
 # TSL-RAG
 
+[![CI](https://github.com/PassivelyIronic/tsl-rag-v2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/PassivelyIronic/tsl-rag-v2/actions/workflows/ci.yml)
+
 Hybrydowy RAG nad prawem transportowym UE i PL — czas pracy kierowców, kabotaż,
 taryfikatory kar. Odpowiada po polsku i **cytuje akt oraz artykuł** przy każdym fakcie.
 
